@@ -116,9 +116,23 @@ function SourcePill({
   snippet?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   if (!source) return null;
 
   const hasSnippet = Boolean(snippet);
+
+  const cancelClose = () => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  };
+
+  const scheduleClose = () => {
+    cancelClose();
+    closeTimer.current = setTimeout(() => setOpen(false), 120);
+  };
 
   return (
     <span className="relative inline-block">
@@ -133,8 +147,11 @@ function SourcePill({
           color: guestColor,
         }}
         data-testid={`source-pill-${source.episode}`}
-        onMouseEnter={() => hasSnippet && setOpen(true)}
-        onMouseLeave={() => setOpen(false)}
+        onMouseEnter={() => {
+          cancelClose();
+          if (hasSnippet) setOpen(true);
+        }}
+        onMouseLeave={scheduleClose}
         onClick={(e) => {
           if (hasSnippet) {
             e.preventDefault();
@@ -147,12 +164,12 @@ function SourcePill({
         {hasSnippet && <BookOpen size={7} className="ml-0.5 opacity-60" />}
       </a>
 
-      {/* Hover snippet popover */}
+      {/* Snippet popover — stays open while hovering pill or popover */}
       {open && snippet && (
         <div
-          className="absolute bottom-full left-0 mb-2 z-50 w-72 rounded-xl border border-border bg-card shadow-xl p-3"
-          onMouseEnter={() => setOpen(true)}
-          onMouseLeave={() => setOpen(false)}
+          className="absolute bottom-full left-0 mb-1 z-50 w-72 rounded-xl border border-border bg-card shadow-xl p-3"
+          onMouseEnter={cancelClose}
+          onMouseLeave={scheduleClose}
         >
           <p className="text-[10px] text-muted-foreground leading-relaxed italic line-clamp-6">
             &ldquo;{snippet}&rdquo;
@@ -167,6 +184,7 @@ function SourcePill({
               rel="noopener noreferrer"
               className="text-[9px] underline"
               style={{ color: guestColor }}
+              onClick={(e) => e.stopPropagation()}
             >
               Full episode →
             </a>
