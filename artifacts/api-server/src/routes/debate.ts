@@ -16,14 +16,21 @@ interface DebateGuest {
   relevantChunks?: string[];
 }
 
+interface DebateTurnHistory {
+  speaker: string;
+  text: string;
+}
+
 interface DebateRequest {
   question: string;
   guests: DebateGuest[];
   interjection?: string;
+  /** Prior turns — sent when interjecting to continue the debate in context */
+  priorTurns?: DebateTurnHistory[];
 }
 
 router.post("/debate", async (req: Request, res: Response) => {
-  const { question, guests, interjection } = req.body as DebateRequest;
+  const { question, guests, interjection, priorTurns } = req.body as DebateRequest;
 
   if (!question?.trim() || !guests?.length) {
     res.status(400).json({ error: "question and guests are required" });
@@ -65,9 +72,19 @@ router.post("/debate", async (req: Request, res: Response) => {
       )
       .join("\n\n");
 
-    const interjectionBlock = interjection
-      ? `\nMid-debate interjection from the audience: "${interjection}"\nLenny should acknowledge this and use it as his next follow-up question.\n`
+    const isInterjection = !!interjection && priorTurns && priorTurns.length > 0;
+
+    const priorTurnsBlock = isInterjection
+      ? `\n=== DEBATE SO FAR ===\n${priorTurns!.map((t) => `${t.speaker}: ${t.text}`).join("\n")}\n=== END OF PRIOR TURNS ===\n`
       : "";
+
+    const interjectionBlock = isInterjection
+      ? `\nAudience interjection: "${interjection}"\nLenny must acknowledge this directly, then let each panelist respond to it.\n`
+      : "";
+
+    const turnsRule = isInterjection
+      ? "- Produce exactly 4-5 follow-up turns continuing from the debate above (NOT a fresh debate)"
+      : "- Produce exactly 7-8 debate turns total\n- Lenny opens with a framing statement, then asks a probing follow-up at turn 3-4 and after turn 6";
 
     const systemPrompt = `You are orchestrating a live debate between ${guestList} about: "${question}".
 
@@ -76,10 +93,9 @@ Lenny Rachitsky moderates in his real interviewing style — calm, probing, asks
 Each panelist is grounded in real quotes from their podcast appearances:
 
 ${guestContextBlocks}
-${interjectionBlock}
+${priorTurnsBlock}${interjectionBlock}
 Rules:
-- Produce exactly 7-8 debate turns total
-- Lenny opens with a framing statement, then asks a probing follow-up at turn 3-4 and after turn 6
+${turnsRule}
 - Panelists MUST disagree at least twice — real intellectual tension
 - When a panelist makes a strong claim grounded in their transcript, set source to that episode/timestamp
 - If a turn cannot be grounded, set source to null — never fabricate a quote
@@ -97,8 +113,8 @@ JSON format for each turn:
 
 Lenny's color is always "#e2e8f0". Use the exact colors provided for each panelist.`;
 
-    const userMsg = interjection
-      ? `Continue the debate incorporating this audience question: "${interjection}"`
+    const userMsg = isInterjection
+      ? `The audience has interjected with: "${interjection}". Continue the debate with 4-5 new turns responding to this.`
       : `Start the debate now.`;
 
     const stream = await chatStream("anthropic/claude-3.5-haiku", [

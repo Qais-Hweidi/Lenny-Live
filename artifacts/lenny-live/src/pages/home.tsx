@@ -983,10 +983,17 @@ export default function Home() {
     async (interject?: string) => {
       if (!panel.length || !question) return;
 
+      const isFollowUp = !!interject && visibleTurns.length > 0;
+
       setState("debating");
       setIsStreaming(true);
       setError(null);
 
+      // For interjections: keep existing turns visible, only clear queue
+      // For fresh debates: wipe everything
+      if (!isFollowUp) {
+        setVisibleTurns([]);
+      }
       turnQueueRef.current = [];
       if (revealTimerRef.current) {
         clearTimeout(revealTimerRef.current);
@@ -1004,7 +1011,15 @@ export default function Home() {
           body: JSON.stringify({
             question,
             guests: panel,
-            ...(interject ? { interjection: interject } : {}),
+            ...(interject
+              ? {
+                  interjection: interject,
+                  priorTurns: visibleTurns.map((t) => ({
+                    speaker: t.speaker,
+                    text: t.text,
+                  })),
+                }
+              : {}),
           }),
           signal: ctrl.signal,
         });
@@ -1081,7 +1096,7 @@ export default function Home() {
         }
       }
     },
-    [panel, question, enqueueTurn, flushQueue],
+    [panel, question, visibleTurns, enqueueTurn, flushQueue],
   );
 
   const handleReset = useCallback(() => {
