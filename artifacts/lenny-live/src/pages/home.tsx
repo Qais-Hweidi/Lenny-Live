@@ -178,7 +178,7 @@ function SourcePill({
 }
 
 /** Word-by-word reveal animation for new caption turns. */
-function AnimatedCaption({ text, color }: { text: string; color: string }) {
+function AnimatedCaption({ text }: { text: string }) {
   const words = text.split(" ");
   const [revealed, setRevealed] = useState(0);
 
@@ -197,13 +197,9 @@ function AnimatedCaption({ text, color }: { text: string; color: string }) {
   }, [words.length]);
 
   return (
-    <p className="text-sm text-foreground/90 leading-relaxed" style={{ color: `${color}00` }}>
-      <span style={{ color: "inherit" }} className="text-foreground/90">
-        {words.slice(0, revealed).join(" ")}
-        {revealed < words.length && (
-          <span className="typing-cursor" />
-        )}
-      </span>
+    <p className="text-sm text-foreground/90 leading-relaxed">
+      {words.slice(0, revealed).join(" ")}
+      {revealed < words.length && <span className="typing-cursor" />}
     </p>
   );
 }
@@ -242,7 +238,7 @@ function TurnBubble({
           )}
         </div>
         {isNew ? (
-          <AnimatedCaption text={turn.text} color={turn.color} />
+          <AnimatedCaption text={turn.text} />
         ) : (
           <p className="text-sm text-foreground/90 leading-relaxed">{turn.text}</p>
         )}
@@ -1497,31 +1493,16 @@ export default function Home() {
               />
             )}
 
-            {/* Interject button — visible once turns arrive */}
+            {/* Interject button — always active once turns arrive, even during streaming */}
             {showInterjectButton && (
               <div className="flex justify-center pt-2">
                 <button
-                  onClick={() => !isStreaming && setShowInterjectModal(true)}
-                  disabled={isStreaming}
-                  className={cn(
-                    "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-medium border transition-all",
-                    isStreaming
-                      ? "border-border text-muted-foreground opacity-50 cursor-not-allowed"
-                      : "border-primary/40 text-primary hover:bg-primary/10 hover:border-primary/60",
-                  )}
+                  onClick={() => setShowInterjectModal(true)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-medium border border-primary/40 text-primary hover:bg-primary/10 hover:border-primary/60 transition-all"
                   data-testid="button-interject"
                 >
-                  {isStreaming ? (
-                    <>
-                      <div className="w-3.5 h-3.5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
-                      Debate in progress…
-                    </>
-                  ) : (
-                    <>
-                      <MessageSquarePlus size={14} />
-                      Interject
-                    </>
-                  )}
+                  <MessageSquarePlus size={14} />
+                  Interject
                 </button>
               </div>
             )}
