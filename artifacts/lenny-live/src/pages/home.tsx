@@ -22,7 +22,10 @@ import {
   ChevronLeft,
   Copy,
   BookOpen,
+  Download,
+  MessageSquarePlus,
 } from "lucide-react";
+import html2canvas from "html2canvas";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -63,7 +66,9 @@ function saveDebate(debate: SavedDebate) {
     const existing = loadSavedDebates().filter((d) => d.id !== debate.id);
     const next = [debate, ...existing].slice(0, MAX_SAVED);
     localStorage.setItem(LS_KEY, JSON.stringify(next));
-  } catch {}
+  } catch {
+    // localStorage unavailable — silently skip
+  }
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
@@ -112,6 +117,9 @@ function SourcePill({
 }) {
   const [open, setOpen] = useState(false);
   if (!source) return null;
+
+  const hasSnippet = Boolean(snippet);
+
   return (
     <span className="relative inline-block">
       <a
@@ -125,10 +133,10 @@ function SourcePill({
           color: guestColor,
         }}
         data-testid={`source-pill-${source.episode}`}
-        onMouseEnter={() => snippet && setOpen(true)}
+        onMouseEnter={() => hasSnippet && setOpen(true)}
         onMouseLeave={() => setOpen(false)}
         onClick={(e) => {
-          if (snippet) {
+          if (hasSnippet) {
             e.preventDefault();
             setOpen((v) => !v);
           }
@@ -136,7 +144,7 @@ function SourcePill({
       >
         <Radio size={8} />
         {source.title || source.episode} · {source.timestamp}
-        {snippet && <BookOpen size={7} className="ml-0.5 opacity-60" />}
+        {hasSnippet && <BookOpen size={7} className="ml-0.5 opacity-60" />}
       </a>
 
       {/* Hover snippet popover */}
@@ -147,7 +155,7 @@ function SourcePill({
           onMouseLeave={() => setOpen(false)}
         >
           <p className="text-[10px] text-muted-foreground leading-relaxed italic line-clamp-6">
-            "{snippet}"
+            &ldquo;{snippet}&rdquo;
           </p>
           <div className="mt-1.5 flex items-center justify-between">
             <span className="text-[9px] text-muted-foreground/50">
@@ -178,7 +186,6 @@ function TurnBubble({
   isNew: boolean;
   guestChunks?: string[];
 }) {
-  // Pick the first relevant chunk as a snippet for the source pill hover
   const snippet = guestChunks?.[0];
 
   return (
@@ -245,7 +252,7 @@ function PanelOrb({
   );
 }
 
-// ─── Guest picker ────────────────────────────────────────────────────────────
+// ─── Guest picker ─────────────────────────────────────────────────────────────
 
 function GuestPicker({
   selected,
@@ -262,8 +269,7 @@ function GuestPicker({
     const q = search.toLowerCase();
     return data.guests.filter(
       (g) =>
-        g.name.toLowerCase().includes(q) ||
-        g.title.toLowerCase().includes(q),
+        g.name.toLowerCase().includes(q) || g.title.toLowerCase().includes(q),
     );
   }, [data, search]);
 
@@ -281,7 +287,10 @@ function GuestPicker({
         />
         {search && (
           <button onClick={() => setSearch("")}>
-            <X size={12} className="text-muted-foreground hover:text-foreground" />
+            <X
+              size={12}
+              className="text-muted-foreground hover:text-foreground"
+            />
           </button>
         )}
       </div>
@@ -318,12 +327,12 @@ function GuestPicker({
               <div
                 className={cn(
                   "w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors",
-                  isSelected
-                    ? "bg-primary border-primary"
-                    : "border-border",
+                  isSelected ? "bg-primary border-primary" : "border-border",
                 )}
               >
-                {isSelected && <Check size={10} className="text-primary-foreground" />}
+                {isSelected && (
+                  <Check size={10} className="text-primary-foreground" />
+                )}
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium text-foreground truncate">
@@ -345,6 +354,95 @@ function GuestPicker({
   );
 }
 
+// ─── Interjection modal ───────────────────────────────────────────────────────
+
+function InterjectModal({
+  onSubmit,
+  onClose,
+}: {
+  onSubmit: (text: string) => void;
+  onClose: () => void;
+}) {
+  const [text, setText] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleSubmit = () => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    onSubmit(trimmed);
+    onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      data-testid="interject-modal-backdrop"
+    >
+      <div className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-2xl p-5 flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground">
+            Interject the debate
+          </h3>
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground transition-colors"
+            data-testid="button-close-interject-modal"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Push back on a point, ask a follow-up, or steer the conversation.
+          Lenny will introduce your question to the panel.
+        </p>
+
+        <input
+          ref={inputRef}
+          type="text"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSubmit();
+            if (e.key === "Escape") onClose();
+          }}
+          placeholder="But what about..."
+          className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground transition-colors"
+          data-testid="input-interjection"
+        />
+
+        <div className="flex items-center gap-2 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-xl text-xs text-muted-foreground hover:text-foreground border border-border hover:border-border/80 transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!text.trim()}
+            className={cn(
+              "flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium transition-all",
+              text.trim()
+                ? "bg-primary text-primary-foreground hover:opacity-90 shadow-md shadow-primary/20"
+                : "bg-muted text-muted-foreground cursor-not-allowed",
+            )}
+            data-testid="button-interject-submit"
+          >
+            <Send size={11} />
+            Send to panel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Summary card ─────────────────────────────────────────────────────────────
 
 function SummaryCard({
@@ -359,13 +457,17 @@ function SummaryCard({
   onNewDebate: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const summaryText = useMemo(() => {
     const header = `Lenny Live: "${question}"\n\n`;
-    const body = turns
-      .map((t) => `[${t.speaker}] ${t.text}`)
-      .join("\n\n");
-    return header + body + "\n\nGenerated by Lenny Live · AI personas grounded in real podcast transcripts · Not affiliated with Lenny Rachitsky";
+    const body = turns.map((t) => `[${t.speaker}] ${t.text}`).join("\n\n");
+    return (
+      header +
+      body +
+      "\n\nGenerated by Lenny Live · AI personas grounded in real podcast transcripts · Not affiliated with Lenny Rachitsky"
+    );
   }, [question, turns]);
 
   const handleShare = useCallback(async () => {
@@ -373,15 +475,36 @@ function SummaryCard({
       try {
         await navigator.share({ title: "Lenny Live Debate", text: summaryText });
         return;
-      } catch {}
+      } catch {
+        // share cancelled or unavailable — fall through to clipboard
+      }
     }
     await navigator.clipboard.writeText(summaryText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }, [summaryText]);
 
+  const handleSavePng = useCallback(async () => {
+    if (!cardRef.current) return;
+    setSaving(true);
+    try {
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: "#0b0f1a",
+        scale: 2,
+        useCORS: true,
+      });
+      const link = document.createElement("a");
+      link.download = `lenny-live-debate-${Date.now()}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } finally {
+      setSaving(false);
+    }
+  }, []);
+
   return (
     <div
+      ref={cardRef}
       className="w-full rounded-2xl border border-border bg-card/60 p-5 flex flex-col gap-4"
       data-testid="summary-card"
     >
@@ -410,9 +533,30 @@ function SummaryCard({
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
+        {/* Save as PNG */}
+        <button
+          onClick={handleSavePng}
+          disabled={saving}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-md shadow-primary/20 disabled:opacity-60"
+          data-testid="button-save-png"
+        >
+          {saving ? (
+            <>
+              <div className="w-3 h-3 border-2 border-primary-foreground/40 border-t-primary-foreground rounded-full animate-spin" />
+              Saving…
+            </>
+          ) : (
+            <>
+              <Download size={12} />
+              Save as PNG
+            </>
+          )}
+        </button>
+
+        {/* Share / copy */}
         <button
           onClick={handleShare}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-md shadow-primary/20"
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
           data-testid="button-share"
         >
           {copied ? (
@@ -433,6 +577,7 @@ function SummaryCard({
           )}
         </button>
 
+        {/* New debate */}
         <button
           onClick={onNewDebate}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
@@ -475,7 +620,8 @@ function PastDebatesRow({ onRestore }: { onRestore: (d: SavedDebate) => void }) 
               {d.question}
             </p>
             <p className="text-[9px] text-muted-foreground mt-0.5 truncate">
-              {d.guestNames.slice(0, 2).join(", ")} · {new Date(d.timestamp).toLocaleDateString()}
+              {d.guestNames.slice(0, 2).join(", ")} ·{" "}
+              {new Date(d.timestamp).toLocaleDateString()}
             </p>
           </button>
         ))}
@@ -509,6 +655,7 @@ export default function Home() {
   const [panel, setPanel] = useState<GuestInfo[]>([]);
   const [selectedGuests, setSelectedGuests] = useState<Set<string>>(new Set());
   const [suggestionOffset, setSuggestionOffset] = useState(0);
+  const [showInterjectModal, setShowInterjectModal] = useState(false);
 
   const [visibleTurns, setVisibleTurns] = useState<DebateTurn[]>([]);
   const turnQueueRef = useRef<DebateTurn[]>([]);
@@ -516,13 +663,11 @@ export default function Home() {
   const [latestTurnIdx, setLatestTurnIdx] = useState<number | null>(null);
 
   const [currentSpeaker, setCurrentSpeaker] = useState<string | null>(null);
-  const [interjection, setInterjection] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // 3 suggestions shown at once, cycling
   const suggestions = useMemo(
     () => ALL_SUGGESTIONS.slice(suggestionOffset, suggestionOffset + 3),
     [suggestionOffset],
@@ -532,7 +677,6 @@ export default function Home() {
     setSuggestionOffset((o) => (o + 3) % ALL_SUGGESTIONS.length);
   }, []);
 
-  // guest chunks map for citation hover
   const guestChunksMap = useMemo(() => {
     const m: Record<string, string[]> = {};
     for (const g of panel) {
@@ -630,7 +774,15 @@ export default function Home() {
     } else {
       selectPanel({ data: { question: question.trim(), panelSize } });
     }
-  }, [question, isSelecting, panelMode, panelSize, selectedGuests, selectPanel, selectManualPanel]);
+  }, [
+    question,
+    isSelecting,
+    panelMode,
+    panelSize,
+    selectedGuests,
+    selectPanel,
+    selectManualPanel,
+  ]);
 
   const startDebate = useCallback(
     async (interject?: string) => {
@@ -639,7 +791,6 @@ export default function Home() {
       setState("debating");
       setIsStreaming(true);
       setError(null);
-      if (interject) setInterjection("");
 
       turnQueueRef.current = [];
       if (revealTimerRef.current) {
@@ -679,11 +830,18 @@ export default function Home() {
           for (const line of lines) {
             if (!line.startsWith("data: ")) continue;
             try {
-              const event = JSON.parse(line.slice(6));
+              const event = JSON.parse(line.slice(6)) as {
+                type: string;
+                speaker?: string;
+                text?: string;
+                color?: string;
+                source?: DebateTurn["source"];
+                message?: string;
+              };
               if (event.type === "turn") {
                 const turn: DebateTurn = {
-                  speaker: event.speaker,
-                  text: event.text,
+                  speaker: event.speaker ?? "",
+                  text: event.text ?? "",
                   color: event.color ?? LENNY_COLOR,
                   source: event.source ?? null,
                 };
@@ -695,31 +853,32 @@ export default function Home() {
                     setState("done");
                     setCurrentSpeaker(null);
                     setIsStreaming(false);
-                    // Save to localStorage
-                    const saved: SavedDebate = {
+                    saveDebate({
                       id: Date.now().toString(),
                       question,
                       guestNames: panel.map((g) => g.name),
                       timestamp: Date.now(),
                       turns: allTurns,
-                    };
-                    saveDebate(saved);
+                    });
                   } else {
                     setTimeout(waitForDrain, TURN_REVEAL_MS);
                   }
                 };
                 setTimeout(waitForDrain, TURN_REVEAL_MS);
               } else if (event.type === "error") {
-                setError(event.message);
+                setError(event.message ?? "Unknown stream error");
                 flushQueue();
                 setState("done");
                 setIsStreaming(false);
               }
-            } catch {}
+            } catch {
+              // malformed SSE line — skip
+            }
           }
         }
-      } catch (err: any) {
-        if (err.name !== "AbortError") {
+      } catch (err: unknown) {
+        const isAbort = err instanceof Error && err.name === "AbortError";
+        if (!isAbort) {
           setError("Debate stream interrupted. Please try again.");
           flushQueue();
           setState("done");
@@ -741,7 +900,7 @@ export default function Home() {
     setError(null);
     setCurrentSpeaker(null);
     setIsStreaming(false);
-    setInterjection("");
+    setShowInterjectModal(false);
   }, []);
 
   const handleRestorePast = useCallback((d: SavedDebate) => {
@@ -763,14 +922,22 @@ export default function Home() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [visibleTurns]);
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Derived state ──────────────────────────────────────────────────────────
 
   const showDebateFeed = state === "debating" || state === "done";
-  const showInterjection =
+  const showInterjectButton =
     state === "done" || (state === "debating" && visibleTurns.length > 0);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
+      {/* ── Interject modal ── */}
+      {showInterjectModal && (
+        <InterjectModal
+          onSubmit={(text) => startDebate(text)}
+          onClose={() => setShowInterjectModal(false)}
+        />
+      )}
+
       {/* ── Header ── */}
       <header className="border-b border-border/50 px-6 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -816,8 +983,8 @@ export default function Home() {
                 Ask Lenny's guests anything
               </h2>
               <p className="text-sm text-muted-foreground max-w-md">
-                AI personas grounded in real transcripts argue your product &amp;
-                career questions
+                AI personas grounded in real podcast transcripts argue your
+                product &amp; career questions
               </p>
             </div>
 
@@ -931,7 +1098,7 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* 3 suggestion chips with cycle button */}
+              {/* 3 suggestion chips + cycle arrows */}
               <div className="mt-3 flex items-center gap-2 flex-wrap">
                 {suggestions.map((q) => (
                   <button
@@ -945,7 +1112,7 @@ export default function Home() {
                 ))}
                 <button
                   onClick={cycleSuggestions}
-                  className="flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors px-1"
+                  className="flex items-center gap-0.5 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors px-1"
                   data-testid="button-cycle-suggestions"
                   title="More suggestions"
                 >
@@ -1131,55 +1298,32 @@ export default function Home() {
               />
             )}
 
-            {/* Interjection input */}
-            {showInterjection && (
-              <div className="flex flex-col gap-3 items-center pt-3 border-t border-border/30">
-                {!isStreaming && state !== "done" && (
-                  <p className="text-xs text-muted-foreground">
-                    Push back or ask a follow-up
-                  </p>
-                )}
-
-                <div className="relative w-full max-w-xl rounded-2xl border border-border bg-card focus-within:border-primary/50 transition-all">
-                  <input
-                    type="text"
-                    value={interjection}
-                    onChange={(e) => setInterjection(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && interjection.trim() && !isStreaming)
-                        startDebate(interjection.trim());
-                    }}
-                    placeholder={
-                      isStreaming
-                        ? "Debate in progress..."
-                        : "Ask a follow-up or push back on a point..."
-                    }
-                    disabled={isStreaming}
-                    className="w-full bg-transparent px-4 py-3 pr-12 text-sm outline-none text-foreground placeholder:text-muted-foreground disabled:opacity-50"
-                    data-testid="input-interjection"
-                  />
-                  <button
-                    onClick={() =>
-                      interjection.trim() &&
-                      !isStreaming &&
-                      startDebate(interjection.trim())
-                    }
-                    disabled={!interjection.trim() || isStreaming}
-                    className={cn(
-                      "absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all",
-                      interjection.trim() && !isStreaming
-                        ? "bg-primary text-primary-foreground hover:opacity-90"
-                        : "text-muted-foreground cursor-not-allowed",
-                    )}
-                    data-testid="button-interject"
-                  >
-                    {isStreaming ? (
-                      <div className="w-3 h-3 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
-                    ) : (
-                      <Send size={13} />
-                    )}
-                  </button>
-                </div>
+            {/* Interject button — visible once turns arrive */}
+            {showInterjectButton && (
+              <div className="flex justify-center pt-2">
+                <button
+                  onClick={() => !isStreaming && setShowInterjectModal(true)}
+                  disabled={isStreaming}
+                  className={cn(
+                    "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-medium border transition-all",
+                    isStreaming
+                      ? "border-border text-muted-foreground opacity-50 cursor-not-allowed"
+                      : "border-primary/40 text-primary hover:bg-primary/10 hover:border-primary/60",
+                  )}
+                  data-testid="button-interject"
+                >
+                  {isStreaming ? (
+                    <>
+                      <div className="w-3.5 h-3.5 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
+                      Debate in progress…
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquarePlus size={14} />
+                      Interject
+                    </>
+                  )}
+                </button>
               </div>
             )}
 
@@ -1195,7 +1339,8 @@ export default function Home() {
       {/* ── Footer ── */}
       <footer className="border-t border-border/30 px-6 py-3 text-center">
         <p className="text-[10px] text-muted-foreground/50">
-          AI personas grounded in real transcripts · Not affiliated with Lenny Rachitsky · Built for the Buildathon
+          AI personas grounded in real podcast transcripts · Not affiliated with
+          Lenny Rachitsky · Built for the Buildathon
         </p>
       </footer>
     </div>

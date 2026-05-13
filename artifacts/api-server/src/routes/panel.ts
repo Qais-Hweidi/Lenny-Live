@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { loadEmbeddings, getIdf, getTopChunksByGuest } from "../lib/embeddings.js";
+import { loadEmbeddings, getIdf, getTopChunksByGuest, embed } from "../lib/embeddings.js";
 import { chat } from "../lib/openrouter.js";
 import { getGuestColor, resetColors, buildPersonaContext } from "../lib/personas.js";
 import fs from "fs";
@@ -59,7 +59,10 @@ router.post("/panel", async (req: Request, res: Response) => {
     const size = Math.min(Math.max(Number(panelSize) || 3, 2), 3);
     const chunks = loadEmbeddings();
     const idf = getIdf();
-    const topByGuest = getTopChunksByGuest([], chunks, 5, question, idf);
+    // Use dense cosine retrieval when embeddings.json is available,
+    // otherwise fall back to BM25 automatically inside getTopChunksByGuest.
+    const queryEmbedding = await embed(question);
+    const topByGuest = getTopChunksByGuest(queryEmbedding, chunks, 5, question, idf);
 
     // Get top guests by their best chunk score
     const guestScores: { guest: string; topScore: number }[] = [];
@@ -88,7 +91,7 @@ router.post("/panel", async (req: Request, res: Response) => {
             content: `Based on these excerpts from ${guest}'s podcast appearance with Lenny Rachitsky, write ONE sentence (max 25 words) summarizing their specific stance on this question: "${question}"\n\nExcerpts:\n${context}\n\nRespond with only the one-sentence stance, no preamble.`,
           },
         ]);
-        return { guest, stance: stance.trim(), chunks: guestChunks as any };
+        return { guest, stance: stance.trim(), chunks: guestChunks };
       })
     );
 
@@ -122,7 +125,7 @@ router.post("/panel", async (req: Request, res: Response) => {
         title: topChunk?.title ?? "",
         timestamp: topChunk?.timestamp ?? "00:00",
         color: getGuestColor(name),
-        relevantChunks: summary.chunks.slice(0, 3).map((c: any) => c.text),
+        relevantChunks: summary.chunks.slice(0, 3).map((c) => c.text),
       };
     });
 
@@ -147,7 +150,8 @@ router.post("/panel/manual", async (req: Request, res: Response) => {
 
     const chunks = loadEmbeddings();
     const idf = getIdf();
-    const topByGuest = getTopChunksByGuest([], chunks, 5, question, idf);
+    const queryEmbedding = await embed(question);
+    const topByGuest = getTopChunksByGuest(queryEmbedding, chunks, 5, question, idf);
 
     resetColors();
     const guests = await Promise.all(
