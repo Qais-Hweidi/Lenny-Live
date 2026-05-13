@@ -366,7 +366,6 @@ function InlineInterjectBox({
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const ALL_SUGGESTIONS = [
-  "Should PMs write code in the AI era?",
   "Is product-led growth still the best GTM strategy?",
   "When should a startup hire its first PM?",
   "Does moving fast and breaking things still work?",
