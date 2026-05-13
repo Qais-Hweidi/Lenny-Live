@@ -177,6 +177,37 @@ function SourcePill({
   );
 }
 
+/** Word-by-word reveal animation for new caption turns. */
+function AnimatedCaption({ text, color }: { text: string; color: string }) {
+  const words = text.split(" ");
+  const [revealed, setRevealed] = useState(0);
+
+  useEffect(() => {
+    if (revealed >= words.length) return;
+    const id = setInterval(() => {
+      setRevealed((r) => {
+        if (r >= words.length) {
+          clearInterval(id);
+          return r;
+        }
+        return r + 1;
+      });
+    }, 55);
+    return () => clearInterval(id);
+  }, [words.length]);
+
+  return (
+    <p className="text-sm text-foreground/90 leading-relaxed" style={{ color: `${color}00` }}>
+      <span style={{ color: "inherit" }} className="text-foreground/90">
+        {words.slice(0, revealed).join(" ")}
+        {revealed < words.length && (
+          <span className="typing-cursor" />
+        )}
+      </span>
+    </p>
+  );
+}
+
 function TurnBubble({
   turn,
   isNew,
@@ -210,10 +241,11 @@ function TurnBubble({
             />
           )}
         </div>
-        <p className="text-sm text-foreground/90 leading-relaxed">
-          {turn.text}
-          {isNew && <span className="typing-cursor" />}
-        </p>
+        {isNew ? (
+          <AnimatedCaption text={turn.text} color={turn.color} />
+        ) : (
+          <p className="text-sm text-foreground/90 leading-relaxed">{turn.text}</p>
+        )}
       </div>
     </div>
   );
@@ -445,6 +477,105 @@ function InterjectModal({
 
 // ─── Summary card ─────────────────────────────────────────────────────────────
 
+/** Extract key insight from debate turns for the summary card. */
+function buildDebateSummary(
+  turns: DebateTurn[],
+  panel: GuestInfo[],
+): {
+  verbatimQuotes: { speaker: string; color: string; quote: string }[];
+  agreementBullets: string[];
+  stances: { name: string; color: string; stance: string }[];
+} {
+  const guestNames = new Set(panel.map((g) => g.name));
+
+  // Per-panelist: find their longest turn as a verbatim quote
+  const verbatimQuotes: { speaker: string; color: string; quote: string }[] = [];
+  for (const guest of panel) {
+    const guestTurns = turns.filter((t) => t.speaker === guest.name && t.text.length > 40);
+    const longest = guestTurns.sort((a, b) => b.text.length - a.text.length)[0];
+    if (longest) {
+      const words = longest.text.split(" ").slice(0, 30).join(" ");
+      verbatimQuotes.push({
+        speaker: guest.name,
+        color: guest.color,
+        quote: words + (longest.text.split(" ").length > 30 ? "…" : ""),
+      });
+    }
+  }
+
+  // Per-panelist stance: first substantive turn
+  const stances: { name: string; color: string; stance: string }[] = [];
+  for (const guest of panel) {
+    const first = turns.find((t) => t.speaker === guest.name && t.text.length > 30);
+    if (first) {
+      const words = first.text.split(" ").slice(0, 20).join(" ");
+      stances.push({
+        name: guest.name,
+        color: guest.color,
+        stance: words + (first.text.split(" ").length > 20 ? "…" : ""),
+      });
+    }
+  }
+
+  // Agreement bullets: simple keyword overlap across panelists
+  const tokenize = (t: string) =>
+    t.toLowerCase().replace(/[^a-z\s]/g, " ").split(/\s+/).filter((w) => w.length > 4);
+
+  const guestTokenSets: Map<string, Set<string>> = new Map();
+  for (const name of guestNames) {
+    const combined = turns
+      .filter((t) => t.speaker === name)
+      .map((t) => t.text)
+      .join(" ");
+    guestTokenSets.set(name, new Set(tokenize(combined)));
+  }
+
+  const allGuests = [...guestNames];
+  const sharedTerms = new Set<string>();
+  if (allGuests.length >= 2) {
+    const [first, ...rest] = allGuests;
+    const firstSet = guestTokenSets.get(first) ?? new Set<string>();
+    for (const term of firstSet) {
+      if (rest.every((g) => guestTokenSets.get(g)?.has(term))) {
+        sharedTerms.add(term);
+      }
+    }
+  }
+
+  // Map shared terms to readable bullets
+  const topicMap: Record<string, string> = {
+    product: "product thinking",
+    growth: "growth strategy",
+    customer: "customer focus",
+    hiring: "hiring decisions",
+    founder: "founder role",
+    market: "market dynamics",
+    shipping: "shipping fast",
+    engineer: "engineering culture",
+    metrics: "measuring success",
+    startup: "startup building",
+    revenue: "revenue models",
+    feedback: "user feedback",
+    scale: "scaling challenges",
+  };
+
+  const bullets: string[] = [];
+  for (const [key, label] of Object.entries(topicMap)) {
+    if (sharedTerms.has(key) && bullets.length < 3) {
+      bullets.push(`Both sides agreed ${label} is central to this question`);
+    }
+  }
+  if (bullets.length === 0 && sharedTerms.size > 0) {
+    const sample = [...sharedTerms].slice(0, 2).join(" and ");
+    bullets.push(`Panelists shared common ground on ${sample}`);
+  }
+  if (bullets.length === 0) {
+    bullets.push("Panelists had sharply divergent perspectives throughout");
+  }
+
+  return { verbatimQuotes, agreementBullets: bullets, stances };
+}
+
 function SummaryCard({
   question,
   panel,
@@ -459,6 +590,11 @@ function SummaryCard({
   const [copied, setCopied] = useState(false);
   const [saving, setSaving] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+
+  const { verbatimQuotes, agreementBullets, stances } = useMemo(
+    () => buildDebateSummary(turns, panel),
+    [turns, panel],
+  );
 
   const summaryText = useMemo(() => {
     const header = `Lenny Live: "${question}"\n\n`;
@@ -508,11 +644,11 @@ function SummaryCard({
       className="w-full rounded-2xl border border-border bg-card/60 p-5 flex flex-col gap-4"
       data-testid="summary-card"
     >
-      {/* Orbs row */}
-      <div className="flex items-center gap-3">
+      {/* Header */}
+      <div className="flex items-center gap-3 flex-wrap">
         {panel.map((g) => (
           <div key={g.name} className="flex items-center gap-1.5">
-            <GlowOrb color={g.color} size={20} float={false} />
+            <GlowOrb color={g.color} size={18} float={false} />
             <span className="text-[11px] text-muted-foreground">
               {g.name.split(" ")[0]}
             </span>
@@ -531,6 +667,73 @@ function SummaryCard({
           {turns.length} turns · {panel.length} panelists
         </p>
       </div>
+
+      {/* Per-panelist stances */}
+      {stances.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+            Where they stood
+          </p>
+          {stances.map((s) => (
+            <div key={s.name} className="flex gap-2 items-start">
+              <GlowOrb color={s.color} size={14} float={false} />
+              <div>
+                <span
+                  className="text-[10px] font-semibold uppercase tracking-wide mr-1"
+                  style={{ color: s.color }}
+                >
+                  {s.name.split(" ")[0]}
+                </span>
+                <span className="text-[11px] text-muted-foreground italic">
+                  "{s.stance}"
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Verbatim quotes */}
+      {verbatimQuotes.length > 0 && (
+        <div className="flex flex-col gap-2">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+            Key quotes
+          </p>
+          {verbatimQuotes.map((q) => (
+            <div
+              key={q.speaker}
+              className="rounded-xl px-3 py-2 text-[11px] leading-relaxed italic text-foreground/80"
+              style={{
+                backgroundColor: `${q.color}0d`,
+                borderLeft: `2px solid ${q.color}60`,
+              }}
+            >
+              &ldquo;{q.quote}&rdquo;
+              <span
+                className="block not-italic text-[10px] mt-0.5 font-medium"
+                style={{ color: q.color }}
+              >
+                — {q.speaker}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Agreement bullets */}
+      {agreementBullets.length > 0 && (
+        <div className="flex flex-col gap-1">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
+            Common ground
+          </p>
+          {agreementBullets.map((b, i) => (
+            <p key={i} className="text-[11px] text-muted-foreground flex gap-1.5 items-start">
+              <span className="text-primary mt-0.5">·</span>
+              {b}
+            </p>
+          ))}
+        </div>
+      )}
 
       <div className="flex items-center gap-2 flex-wrap">
         {/* Save as PNG */}
@@ -655,6 +858,7 @@ export default function Home() {
   const [panel, setPanel] = useState<GuestInfo[]>([]);
   const [selectedGuests, setSelectedGuests] = useState<Set<string>>(new Set());
   const [suggestionOffset, setSuggestionOffset] = useState(0);
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const [showInterjectModal, setShowInterjectModal] = useState(false);
 
   const [visibleTurns, setVisibleTurns] = useState<DebateTurn[]>([]);
@@ -672,6 +876,15 @@ export default function Home() {
     () => ALL_SUGGESTIONS.slice(suggestionOffset, suggestionOffset + 3),
     [suggestionOffset],
   );
+
+  // Cycle placeholder text every 3 seconds when the input is empty and idle
+  useEffect(() => {
+    if (state !== "idle") return;
+    const id = setInterval(() => {
+      setPlaceholderIdx((i) => (i + 1) % ALL_SUGGESTIONS.length);
+    }, 3000);
+    return () => clearInterval(id);
+  }, [state]);
 
   const cycleSuggestions = useCallback(() => {
     setSuggestionOffset((o) => (o + 3) % ALL_SUGGESTIONS.length);
@@ -1059,7 +1272,7 @@ export default function Home() {
                       handleAsk();
                     }
                   }}
-                  placeholder="Ask a product or career question..."
+                  placeholder={question ? "" : ALL_SUGGESTIONS[placeholderIdx]}
                   rows={2}
                   className="w-full bg-transparent px-4 pt-4 pb-12 text-sm resize-none outline-none text-foreground placeholder:text-muted-foreground"
                   disabled={state === "selecting"}
@@ -1340,7 +1553,7 @@ export default function Home() {
       <footer className="border-t border-border/30 px-6 py-3 text-center">
         <p className="text-[10px] text-muted-foreground/50">
           AI personas grounded in real podcast transcripts · Not affiliated with
-          Lenny Rachitsky · Built for the Buildathon
+          Lenny Rachitsky · Built for Lenny's Buildathon
         </p>
       </footer>
     </div>

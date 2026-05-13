@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { loadEmbeddings, getIdf, getTopChunksByGuest } from "../lib/embeddings.js";
+import { loadEmbeddings, getIdf, getTopChunksByGuest, embed } from "../lib/embeddings.js";
 import { chatStream } from "../lib/openrouter.js";
 import { buildPersonaContext } from "../lib/personas.js";
 import path from "path";
@@ -45,7 +45,8 @@ router.post("/debate", async (req: Request, res: Response) => {
     // Get relevant context for each guest using BM25
     const chunks = loadEmbeddings();
     const idf = getIdf();
-    const topByGuest = getTopChunksByGuest([], chunks, 5, question, idf);
+    const queryEmbedding = await embed(question);
+    const topByGuest = getTopChunksByGuest(queryEmbedding, chunks, 5, question, idf);
 
     const guestContexts = guests.map((g) => {
       const guestChunks = topByGuest.get(g.name) ?? [];
