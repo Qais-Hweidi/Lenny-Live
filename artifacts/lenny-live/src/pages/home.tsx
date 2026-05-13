@@ -17,15 +17,9 @@ import {
   Search,
   X,
   Check,
-  Share2,
   Clock,
   ChevronLeft,
-  Copy,
-  BookOpen,
-  Download,
-  MessageSquarePlus,
 } from "lucide-react";
-import html2canvas from "html2canvas";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -109,88 +103,25 @@ function GlowOrb({
 function SourcePill({
   source,
   guestColor,
-  snippet,
 }: {
   source: DebateTurn["source"];
   guestColor: string;
   snippet?: string;
 }) {
-  const [open, setOpen] = useState(false);
-  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   if (!source) return null;
 
-  const hasSnippet = Boolean(snippet);
-
-  const cancelClose = () => {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  };
-
-  const scheduleClose = () => {
-    cancelClose();
-    closeTimer.current = setTimeout(() => setOpen(false), 120);
-  };
-
   return (
-    <span className="relative inline-block">
-      <a
-        href={`https://www.lennysnewsletter.com/p/${source.episode}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium mt-1.5 opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
-        style={{
-          backgroundColor: `${guestColor}18`,
-          border: `1px solid ${guestColor}40`,
-          color: guestColor,
-        }}
-        data-testid={`source-pill-${source.episode}`}
-        onMouseEnter={() => {
-          cancelClose();
-          if (hasSnippet) setOpen(true);
-        }}
-        onMouseLeave={scheduleClose}
-        onClick={(e) => {
-          if (hasSnippet) {
-            e.preventDefault();
-            setOpen((v) => !v);
-          }
-        }}
-      >
-        <Radio size={8} />
-        {source.title || source.episode} · {source.timestamp}
-        {hasSnippet && <BookOpen size={7} className="ml-0.5 opacity-60" />}
-      </a>
-
-      {/* Snippet popover — stays open while hovering pill or popover */}
-      {open && snippet && (
-        <div
-          className="absolute bottom-full left-0 mb-1 z-50 w-72 rounded-xl border border-border bg-card shadow-xl p-3"
-          onMouseEnter={cancelClose}
-          onMouseLeave={scheduleClose}
-        >
-          <p className="text-[10px] text-muted-foreground leading-relaxed italic line-clamp-6">
-            &ldquo;{snippet}&rdquo;
-          </p>
-          <div className="mt-1.5 flex items-center justify-between">
-            <span className="text-[9px] text-muted-foreground/50">
-              {source.title} · {source.timestamp}
-            </span>
-            <a
-              href={`https://www.lennysnewsletter.com/p/${source.episode}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[9px] underline"
-              style={{ color: guestColor }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              Full episode →
-            </a>
-          </div>
-        </div>
-      )}
+    <span
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium mt-1.5 opacity-70 select-none"
+      style={{
+        backgroundColor: `${guestColor}18`,
+        border: `1px solid ${guestColor}40`,
+        color: guestColor,
+      }}
+      data-testid={`source-pill-${source.episode}`}
+    >
+      <Radio size={8} />
+      {source.title || source.episode} · {source.timestamp}
     </span>
   );
 }
@@ -402,393 +333,60 @@ function GuestPicker({
 
 // ─── Interjection modal ───────────────────────────────────────────────────────
 
-function InterjectModal({
+/** Inline text box for follow-up questions during / after the debate. */
+function InlineInterjectBox({
   onSubmit,
-  onClose,
+  isStreaming,
+  isDone,
+  onNewDebate,
 }: {
   onSubmit: (text: string) => void;
-  onClose: () => void;
+  isStreaming: boolean;
+  isDone: boolean;
+  onNewDebate: () => void;
 }) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    inputRef.current?.focus();
-  }, []);
-
-  const handleSubmit = () => {
+  const handleSend = () => {
     const trimmed = text.trim();
     if (!trimmed) return;
+    setText("");
     onSubmit(trimmed);
-    onClose();
   };
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-      data-testid="interject-modal-backdrop"
-    >
-      <div className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-2xl p-5 flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-foreground">
-            Interject the debate
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            data-testid="button-close-interject-modal"
-          >
-            <X size={15} />
-          </button>
-        </div>
-
-        <p className="text-xs text-muted-foreground">
-          Push back on a point, ask a follow-up, or steer the conversation.
-          Lenny will introduce your question to the panel.
-        </p>
-
+    <div className="flex flex-col gap-2 pt-2">
+      <div className="flex gap-2 items-center">
         <input
           ref={inputRef}
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={(e) => {
-            if (e.key === "Enter") handleSubmit();
-            if (e.key === "Escape") onClose();
+            if (e.key === "Enter") handleSend();
           }}
-          placeholder="But what about..."
-          className="w-full bg-background border border-border rounded-xl px-4 py-3 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground transition-colors"
+          placeholder="Ask a follow-up or push back…"
+          className="flex-1 bg-card border border-border rounded-xl px-4 py-2.5 text-sm outline-none focus:border-primary/50 text-foreground placeholder:text-muted-foreground transition-colors"
           data-testid="input-interjection"
         />
-
-        <div className="flex items-center gap-2 justify-end">
+        <button
+          onClick={handleSend}
+          disabled={!text.trim() || isStreaming}
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-md shadow-primary/20 disabled:opacity-40 disabled:cursor-not-allowed"
+          data-testid="button-interject-submit"
+        >
+          <Send size={13} />
+        </button>
+        {isDone && (
           <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-xl text-xs text-muted-foreground hover:text-foreground border border-border hover:border-border/80 transition-all"
+            onClick={onNewDebate}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
+            data-testid="button-new-debate"
           >
-            Cancel
+            <RefreshCw size={13} />
           </button>
-          <button
-            onClick={handleSubmit}
-            disabled={!text.trim()}
-            className={cn(
-              "flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium transition-all",
-              text.trim()
-                ? "bg-primary text-primary-foreground hover:opacity-90 shadow-md shadow-primary/20"
-                : "bg-muted text-muted-foreground cursor-not-allowed",
-            )}
-            data-testid="button-interject-submit"
-          >
-            <Send size={11} />
-            Send to panel
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Summary card ─────────────────────────────────────────────────────────────
-
-/** Extract key insight from debate turns for the summary card. */
-function buildDebateSummary(
-  turns: DebateTurn[],
-  panel: GuestInfo[],
-): {
-  verbatimQuotes: { speaker: string; color: string; quote: string }[];
-  agreementBullets: string[];
-  stances: { name: string; color: string; stance: string }[];
-} {
-  const guestNames = new Set(panel.map((g) => g.name));
-
-  // Per-panelist: find their longest turn as a verbatim quote
-  const verbatimQuotes: { speaker: string; color: string; quote: string }[] = [];
-  for (const guest of panel) {
-    const guestTurns = turns.filter((t) => t.speaker === guest.name && t.text.length > 40);
-    const longest = guestTurns.sort((a, b) => b.text.length - a.text.length)[0];
-    if (longest) {
-      const words = longest.text.split(" ").slice(0, 30).join(" ");
-      verbatimQuotes.push({
-        speaker: guest.name,
-        color: guest.color,
-        quote: words + (longest.text.split(" ").length > 30 ? "…" : ""),
-      });
-    }
-  }
-
-  // Per-panelist stance: first substantive turn
-  const stances: { name: string; color: string; stance: string }[] = [];
-  for (const guest of panel) {
-    const first = turns.find((t) => t.speaker === guest.name && t.text.length > 30);
-    if (first) {
-      const words = first.text.split(" ").slice(0, 20).join(" ");
-      stances.push({
-        name: guest.name,
-        color: guest.color,
-        stance: words + (first.text.split(" ").length > 20 ? "…" : ""),
-      });
-    }
-  }
-
-  // Agreement bullets: simple keyword overlap across panelists
-  const tokenize = (t: string) =>
-    t.toLowerCase().replace(/[^a-z\s]/g, " ").split(/\s+/).filter((w) => w.length > 4);
-
-  const guestTokenSets: Map<string, Set<string>> = new Map();
-  for (const name of guestNames) {
-    const combined = turns
-      .filter((t) => t.speaker === name)
-      .map((t) => t.text)
-      .join(" ");
-    guestTokenSets.set(name, new Set(tokenize(combined)));
-  }
-
-  const allGuests = [...guestNames];
-  const sharedTerms = new Set<string>();
-  if (allGuests.length >= 2) {
-    const [first, ...rest] = allGuests;
-    const firstSet = guestTokenSets.get(first) ?? new Set<string>();
-    for (const term of firstSet) {
-      if (rest.every((g) => guestTokenSets.get(g)?.has(term))) {
-        sharedTerms.add(term);
-      }
-    }
-  }
-
-  // Map shared terms to readable bullets
-  const topicMap: Record<string, string> = {
-    product: "product thinking",
-    growth: "growth strategy",
-    customer: "customer focus",
-    hiring: "hiring decisions",
-    founder: "founder role",
-    market: "market dynamics",
-    shipping: "shipping fast",
-    engineer: "engineering culture",
-    metrics: "measuring success",
-    startup: "startup building",
-    revenue: "revenue models",
-    feedback: "user feedback",
-    scale: "scaling challenges",
-  };
-
-  const bullets: string[] = [];
-  for (const [key, label] of Object.entries(topicMap)) {
-    if (sharedTerms.has(key) && bullets.length < 3) {
-      bullets.push(`Both sides agreed ${label} is central to this question`);
-    }
-  }
-  if (bullets.length === 0 && sharedTerms.size > 0) {
-    const sample = [...sharedTerms].slice(0, 2).join(" and ");
-    bullets.push(`Panelists shared common ground on ${sample}`);
-  }
-  if (bullets.length === 0) {
-    bullets.push("Panelists had sharply divergent perspectives throughout");
-  }
-
-  return { verbatimQuotes, agreementBullets: bullets, stances };
-}
-
-function SummaryCard({
-  question,
-  panel,
-  turns,
-  onNewDebate,
-}: {
-  question: string;
-  panel: GuestInfo[];
-  turns: DebateTurn[];
-  onNewDebate: () => void;
-}) {
-  const [saved, setSaved] = useState(false);
-  const [sharing, setSharing] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  const { verbatimQuotes, agreementBullets, stances } = useMemo(
-    () => buildDebateSummary(turns, panel),
-    [turns, panel],
-  );
-
-  /** Save this debate to localStorage so it appears in the past-debates row. */
-  const handleSave = useCallback(() => {
-    const debate: SavedDebate = {
-      id: `${Date.now()}`,
-      question,
-      guestNames: panel.map((g) => g.name),
-      timestamp: Date.now(),
-      turns,
-    };
-    saveDebate(debate);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-  }, [question, panel, turns]);
-
-  /** Export the summary card as a PNG via html2canvas. */
-  const handleShare = useCallback(async () => {
-    if (!cardRef.current) return;
-    setSharing(true);
-    try {
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: "#0b0f1a",
-        scale: 2,
-        useCORS: true,
-      });
-      const link = document.createElement("a");
-      link.download = `lenny-live-debate-${Date.now()}.png`;
-      link.href = canvas.toDataURL("image/png");
-      link.click();
-    } finally {
-      setSharing(false);
-    }
-  }, []);
-
-  return (
-    <div
-      ref={cardRef}
-      className="w-full rounded-2xl border border-border bg-card/60 p-5 flex flex-col gap-4"
-      data-testid="summary-card"
-    >
-      {/* Header */}
-      <div className="flex items-center gap-3 flex-wrap">
-        {panel.map((g) => (
-          <div key={g.name} className="flex items-center gap-1.5">
-            <GlowOrb color={g.color} size={18} float={false} />
-            <span className="text-[11px] text-muted-foreground">
-              {g.name.split(" ")[0]}
-            </span>
-          </div>
-        ))}
-      </div>
-
-      <div>
-        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">
-          Debate complete
-        </p>
-        <p className="text-sm font-semibold text-foreground leading-snug">
-          {question}
-        </p>
-        <p className="text-xs text-muted-foreground mt-1">
-          {turns.length} turns · {panel.length} panelists
-        </p>
-      </div>
-
-      {/* Per-panelist stances */}
-      {stances.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-            Where they stood
-          </p>
-          {stances.map((s) => (
-            <div key={s.name} className="flex gap-2 items-start">
-              <GlowOrb color={s.color} size={14} float={false} />
-              <div>
-                <span
-                  className="text-[10px] font-semibold uppercase tracking-wide mr-1"
-                  style={{ color: s.color }}
-                >
-                  {s.name.split(" ")[0]}
-                </span>
-                <span className="text-[11px] text-muted-foreground italic">
-                  "{s.stance}"
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Verbatim quotes */}
-      {verbatimQuotes.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-            Key quotes
-          </p>
-          {verbatimQuotes.map((q) => (
-            <div
-              key={q.speaker}
-              className="rounded-xl px-3 py-2 text-[11px] leading-relaxed italic text-foreground/80"
-              style={{
-                backgroundColor: `${q.color}0d`,
-                borderLeft: `2px solid ${q.color}60`,
-              }}
-            >
-              &ldquo;{q.quote}&rdquo;
-              <span
-                className="block not-italic text-[10px] mt-0.5 font-medium"
-                style={{ color: q.color }}
-              >
-                — {q.speaker}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Agreement bullets */}
-      {agreementBullets.length > 0 && (
-        <div className="flex flex-col gap-1">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest">
-            Common ground
-          </p>
-          {agreementBullets.map((b, i) => (
-            <p key={i} className="text-[11px] text-muted-foreground flex gap-1.5 items-start">
-              <span className="text-primary mt-0.5">·</span>
-              {b}
-            </p>
-          ))}
-        </div>
-      )}
-
-      <div className="flex items-center gap-2 flex-wrap">
-        {/* Save to localStorage */}
-        <button
-          onClick={handleSave}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-md shadow-primary/20"
-          data-testid="button-save"
-        >
-          {saved ? (
-            <>
-              <Check size={12} />
-              Saved!
-            </>
-          ) : (
-            <>
-              <Download size={12} />
-              Save
-            </>
-          )}
-        </button>
-
-        {/* Share as PNG via html2canvas */}
-        <button
-          onClick={handleShare}
-          disabled={sharing}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all disabled:opacity-60"
-          data-testid="button-share"
-        >
-          {sharing ? (
-            <>
-              <div className="w-3 h-3 border-2 border-muted-foreground/40 border-t-muted-foreground rounded-full animate-spin" />
-              Exporting…
-            </>
-          ) : (
-            <>
-              <Share2 size={12} />
-              Share
-            </>
-          )}
-        </button>
-
-        {/* New debate */}
-        <button
-          onClick={onNewDebate}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
-          data-testid="button-new-debate"
-        >
-          <RefreshCw size={12} />
-          New debate
-        </button>
+        )}
       </div>
     </div>
   );
@@ -859,7 +457,7 @@ export default function Home() {
   const [selectedGuests, setSelectedGuests] = useState<Set<string>>(new Set());
   const [suggestionOffset, setSuggestionOffset] = useState(0);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
-  const [showInterjectModal, setShowInterjectModal] = useState(false);
+
 
   const [visibleTurns, setVisibleTurns] = useState<DebateTurn[]>([]);
   const turnQueueRef = useRef<DebateTurn[]>([]);
@@ -1128,7 +726,6 @@ export default function Home() {
     setError(null);
     setCurrentSpeaker(null);
     setIsStreaming(false);
-    setShowInterjectModal(false);
   }, []);
 
   const handleRestorePast = useCallback((d: SavedDebate) => {
@@ -1158,14 +755,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* ── Interject modal ── */}
-      {showInterjectModal && (
-        <InterjectModal
-          onSubmit={(text) => startDebate(text)}
-          onClose={() => setShowInterjectModal(false)}
-        />
-      )}
-
       {/* ── Header ── */}
       <header className="border-b border-border/50 px-6 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
@@ -1516,28 +1105,14 @@ export default function Home() {
               <div ref={bottomRef} />
             </div>
 
-            {/* Summary card — shown when done */}
-            {state === "done" && (
-              <SummaryCard
-                question={question}
-                panel={panel}
-                turns={visibleTurns}
+            {/* Inline follow-up input — visible once turns arrive */}
+            {showInterjectButton && (
+              <InlineInterjectBox
+                onSubmit={(text) => startDebate(text)}
+                isStreaming={isStreaming}
+                isDone={state === "done"}
                 onNewDebate={handleReset}
               />
-            )}
-
-            {/* Interject button — always active once turns arrive, even during streaming */}
-            {showInterjectButton && (
-              <div className="flex justify-center pt-2">
-                <button
-                  onClick={() => setShowInterjectModal(true)}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-medium border border-primary/40 text-primary hover:bg-primary/10 hover:border-primary/60 transition-all"
-                  data-testid="button-interject"
-                >
-                  <MessageSquarePlus size={14} />
-                  Interject
-                </button>
-              </div>
             )}
 
             {error && (
