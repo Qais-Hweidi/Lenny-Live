@@ -1,0 +1,269 @@
+Copy everything below this line and paste it as your first prompt to Replit Agent. It is self-contained — no prior context needed.
+
+---
+
+# Project Brief: "Lenny Live" — an AI Debate Room for Product Questions
+
+## Background context (read this first)
+
+I'm building a submission for **Lenny's Buildathon**, a contest sponsored by Lenny Rachitsky (creator of Lenny's Newsletter, a top product-management newsletter on Substack with 1M+ subscribers) and Replit.
+
+- **Buildathon site:** https://lennysbuildathon.replit.app/
+- **Submission deadline:** May 27, 2026 (winners announced June 3)
+- **Constraint:** must be built and deployed on Replit (.replit.app URL)
+- **Judging criteria (in order):**
+  1. **Creative use of the dataset** — surprising, delightful, novel approaches stand out
+  2. **Usefulness** — does it solve a real problem
+  3. **Execution & polish** — shipped and polished beats ambitious and broken
+
+**The dataset (free tier — what I'm using):**
+
+- **GitHub repo:** https://github.com/LennysNewsletter/lennys-newsletterpodcastdata
+- Contents: **10 newsletter posts** (markdown) in `/newsletters/`, **50 podcast transcripts** (markdown) in `/podcasts/`, plus `index.json` with metadata (titles, dates, guest names, episode numbers, word counts)
+- All files are in AI-friendly plain markdown
+- **Clone this repo into the project** — it's the heart of the app
+
+## The product concept (the full vision)
+
+**"Lenny Live"** is a debate room where a user asks a product/career question and **two or three AI personas — each grounded in actual transcript quotes from real podcast guests (Shreyas Doshi, Teresa Torres, Reid Hoffman, Mira Murati, etc.) — argue it out**. Lenny moderates with sharp follow-ups in his interviewing style. Every claim a persona makes shows a **source citation pill** (episode + timestamp) pulled from the real transcripts.
+
+The user can **interrupt** the debate. The end-state is a **shareable summary card** with where the panel agreed, where they split, and the one quote to remember.
+
+The final product is voice-first. **We are building it in phases.**
+
+---
+
+## Phase 1 — POC (BUILD THIS NOW, nothing else)
+
+**No voice. No audio. Text only.** A polished, animated, streaming-text debate experience. Minimal but visually striking. Everything else gets added later.
+
+### Phase 1 user flow
+
+1. **Landing page (dark theme)**
+   - Centered headline: **"Ask product's smartest minds to argue it out."**
+   - Single large text input below it
+   - Placeholder cycles through real questions: *"Should we ship the MVP or polish more?"*, *"How do I know I've hit product-market fit?"*, *"When do I make my first PM hire?"*
+   - Three suggested-question chips below the input
+   - No nav, no signup, no marketing copy
+
+2. **Panel selection screen (auto-generated after user submits question)**
+   - Backend semantically searches the 50 transcripts to find the 3 guests whose actual quotes show the **strongest and most opposed** stances on the question
+   - Display 3 cards side-by-side, each with:
+     - Guest name
+     - A real one-sentence stance pulled directly from their transcript
+     - Episode number, episode title, approximate timestamp
+   - "Start the debate →" button
+
+3. **The debate room (the wow moment)**
+   - Fullscreen black/dark background
+   - Three glowing **circular orbs** arranged in a triangle at the top — one per panelist, each a distinct color (Shreyas amber `#f59e0b`, Teresa cyan `#06b6d4`, Reid magenta `#ec4899` — pick colors dynamically per guest)
+   - A fourth, slightly smaller orb in the center: **Lenny — moderator** (color: white/silver)
+   - The active speaker's orb **pulses and glows brighter**; others dim
+   - Below the orbs: **live-streaming captions** appear word-by-word as if being spoken in real time (use OpenAI streaming API + a typing animation, ~20-30 chars/sec)
+   - Each substantive claim gets a small **source pill** next to it: `[Ep 142 · 23:14]` — clickable, opens a panel showing the actual transcript snippet that grounds the claim
+   - Captions are color-coded by speaker (same color as their orb)
+   - Captions persist on screen (scrolling feed) so the user can re-read
+   - Lenny chimes in between turns with a sharp follow-up in his interviewing style (e.g., *"But what if the founder isn't the PM here, what changes?"*)
+
+4. **Interject button**
+   - Persistent **"⌨ Interject"** button at the bottom of the screen
+   - Click → input modal appears, user types a question or pushback
+   - Submit → Lenny rephrases it as a follow-up and the panel responds
+   - (No voice/push-to-talk in POC — text only)
+
+5. **End-of-debate summary card**
+   - Slides up after ~6-8 exchanges
+   - Contains:
+     - The original question
+     - **Where they agreed** (1-2 bullets)
+     - **Where they split** (1 bullet per panelist with their final stance)
+     - **The one line to remember** — a verbatim real quote from one panelist, with attribution
+   - Three buttons: **📋 Save** (saves to localStorage), **🔗 Share** (generates a downloadable PNG of the card using html2canvas), **♻ New debate**
+
+6. **Library** (lightweight)
+   - On return visits, show "Your past debates" row at the bottom of the landing page (from localStorage)
+
+### Phase 1 is explicitly OUT OF SCOPE for now
+
+- No voice input or output (no TTS, no STT, no audio playback)
+- No user accounts, no auth, no database, no backend persistence
+- No WebSockets (use plain HTTP streaming for LLM responses)
+- No vector DB (50 transcripts fits easily in memory)
+- No fancy animations beyond orb pulsing + caption typing
+- No mobile-specific layout (desktop-first; just make it not break on mobile)
+
+---
+
+## Phase 2 — Polish & Visual Pass (after Phase 1 works end-to-end)
+
+- Smoother orb animations (waveform-like pulse synced to caption typing speed)
+- Better share-image generation (vertical 9:16 format for X/LinkedIn, with branding)
+- "Trending questions" feed on the landing page (precomputed list of 10-20 good debate questions)
+- Weekly "featured debate" curated card
+- Loading-state polish (skeleton screens, smooth transitions)
+- Light/dark theme toggle
+- Onboarding tooltip the first time
+
+---
+
+## Phase 3 — Voice (the wow finisher)
+
+- Replace streaming text with **OpenAI Realtime API** or **ElevenLabs TTS** for each persona
+- Distinct synthesized voice per guest (NEVER clone real voices — use neutral TTS voices, clearly labeled as AI representations)
+- Live captions still display alongside audio
+- **Push-to-talk interrupt** — user holds a button to speak, Whisper transcribes, panel reacts
+- Share-clip: auto-generate a 30-second vertical video of the spiciest exchange (orbs + captions + audio)
+
+---
+
+## Tech stack (use this exact stack for Phase 1)
+
+- **Frontend:** React + Vite, TypeScript, Tailwind CSS
+- **Backend:** Node.js + Express (one server, serves API + static frontend)
+- **LLM:** OpenAI API
+  - `gpt-4o-mini` for the debate generation (fast, cheap, good enough)
+  - `gpt-4o` for the panel-selection step (better at picking opposing views) — optional, can use mini for both
+  - **Use streaming** for the debate so captions appear word-by-word
+- **Embeddings:** OpenAI `text-embedding-3-small` — embed all transcript chunks once at startup, store in memory as a JSON array, do cosine similarity in JS (no Pinecone, no Chroma — overkill for 50 docs)
+- **Share image:** `html2canvas` client-side
+- **Persistence:** `localStorage` only
+
+## Required Replit secret
+
+- `OPENAI_API_KEY` — I will set this in Replit's secrets panel
+
+## Suggested file/folder structure
+
+```
+/data/                          # cloned from the GitHub repo
+  ├── newsletters/              # 10 .md files
+  ├── podcasts/                 # 50 .md files
+  └── index.json
+/scripts/
+  └── build-index.ts            # one-time: parse markdown, chunk, embed, save to /data/embeddings.json
+/server/
+  ├── index.ts                  # Express server
+  ├── routes/
+  │   ├── select-panel.ts       # POST /api/panel — given question, returns 3 guests + quotes
+  │   └── debate.ts             # POST /api/debate — streams the debate (SSE)
+  └── lib/
+      ├── search.ts             # in-memory cosine similarity over embeddings
+      ├── personas.ts           # builds persona prompt from a guest's chunks
+      └── prompts.ts            # all LLM prompts
+/client/
+  ├── src/
+  │   ├── App.tsx
+  │   ├── pages/
+  │   │   ├── Landing.tsx
+  │   │   ├── PanelSelect.tsx
+  │   │   ├── DebateRoom.tsx
+  │   │   └── Summary.tsx
+  │   ├── components/
+  │   │   ├── Orb.tsx           # animated speaker orb
+  │   │   ├── Caption.tsx       # typing-effect caption with source pill
+  │   │   └── SourcePill.tsx
+  │   └── lib/
+  │       └── api.ts
+  └── index.html
+package.json
+vite.config.ts
+.replit
+```
+
+## Data pipeline (build-index.ts)
+
+This runs **once** at project setup, output is committed to the repo so the server starts instantly.
+
+1. Read every `.md` file in `/data/podcasts/` and `/data/newsletters/`
+2. For each file, parse front-matter / first lines to extract: guest name, episode number, title (cross-reference with `index.json`)
+3. Chunk each transcript into ~500-token segments with ~100-token overlap
+4. Estimate a timestamp for each chunk (linear interpolation: chunk position / total chunks × episode duration from `index.json` if available; otherwise just chunk index)
+5. Embed every chunk with `text-embedding-3-small`
+6. Save to `/data/embeddings.json`: an array of `{ guest, episode, title, timestamp, text, embedding }`
+
+## Panel-selection endpoint logic
+
+`POST /api/panel { question }` →
+
+1. Embed the question
+2. Compute cosine similarity to every chunk
+3. Group top 50 chunks by guest
+4. For each guest, summarize their stance in one sentence (LLM call, grounded in their top chunks)
+5. From the top 5-6 candidate guests, **pick 3 whose stances are most divergent** (LLM call: "given these stances, pick the 3 that disagree most strongly")
+6. Return `{ guests: [{ name, stance, episode, title, timestamp, color }, ...] }`
+
+## Debate endpoint logic
+
+`POST /api/debate { question, guests, interjection? }` → returns Server-Sent Events stream
+
+The system prompt to GPT-4o-mini:
+
+```
+You are orchestrating a live debate between {guest1}, {guest2}, and {guest3}
+about: "{question}".
+
+Lenny Rachitsky moderates in his real interviewing style (calm, probing,
+asks "but why" follow-ups, surfaces tensions).
+
+Each panelist has these grounding quotes from their real podcast appearances:
+{guest1.relevant_chunks}
+{guest2.relevant_chunks}
+{guest3.relevant_chunks}
+
+Produce a 6-8 turn debate. Each turn is JSON:
+{
+  "speaker": "Shreyas Doshi" | "Teresa Torres" | "Reid Hoffman" | "Lenny",
+  "text": "...",
+  "source": { "episode": 142, "title": "...", "timestamp": "23:14" } | null
+}
+
+Rules:
+- Panelists must disagree at least twice
+- Lenny asks a probing follow-up between turns 3-4 and after turn 6
+- When a panelist makes a strong claim, ground it in a real quote from
+  their chunks and set `source` to that episode
+- Keep each turn under 60 words
+- Stream as a JSON array, one object at a time
+```
+
+Stream the response back to the client and render each turn as it arrives.
+
+## Critical guardrails — DO NOT skip these
+
+- **Label all AI output clearly.** Every page footer: *"AI representations grounded in publicly available podcast transcripts. Not affiliated with the guests or Lenny's Newsletter."*
+- **Never clone real voices** when we get to Phase 3 — use generic TTS voices only
+- **Always cite the source episode** on substantive claims — this is what makes the dataset usage feel real and earns the #1 judging criterion
+- **Do not invent quotes.** If a turn can't be grounded in a chunk, leave `source: null` and make the language paraphrastic, not in quotes
+- **Use only the free dataset** (10 newsletters + 50 podcasts from the GitHub repo). Do not call any external Lenny APIs
+
+## Visual design notes
+
+- **Background:** very dark, near-black (`#0a0a0f`)
+- **Typography:** Inter or similar geometric sans, large weights for headlines
+- **Orbs:** ~120px diameter, soft radial gradient, drop-shadow glow in the speaker's color, pulse animation when active (scale 1.0 → 1.08, ease in/out, ~1.2s loop)
+- **Captions:** monospace or near-monospace font for the typing feel, color-coded by speaker, max-width ~600px, large line-height
+- **Source pills:** small rounded badge, semi-transparent, hover to expand and show the full quote
+- **Transitions:** smooth fades between scenes (~300ms), no jarring cuts
+
+## Submission requirements (don't forget at the end)
+
+After Phase 1 is shipped, the buildathon submission needs:
+- **Deployed .replit.app URL**
+- **Screenshots** (especially the debate room with three glowing orbs — that's the money shot)
+- **Brief description** of what was built and how it uses the dataset
+
+## How to proceed
+
+1. **First**, clone the dataset repo into `/data/` and confirm you can read and parse the markdown files and `index.json`
+2. **Second**, write `build-index.ts` and run it once to produce `embeddings.json`
+3. **Third**, build the Express server with the two endpoints, test them with curl
+4. **Fourth**, build the React frontend scene by scene (Landing → PanelSelect → DebateRoom → Summary)
+5. **Last**, polish — orb animations, caption typing effect, share image
+
+Build incrementally and show me each scene working before moving to the next. Do **not** try to build all four scenes at once.
+
+When in doubt: ship a polished narrow version, not an ambitious broken one.
+
+---
+
+End of brief. Begin by cloning the dataset repo and confirming the file structure, then propose your implementation plan before writing code.
