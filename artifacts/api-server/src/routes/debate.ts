@@ -117,7 +117,7 @@ Lenny's color is always "#e2e8f0". Use the exact colors provided for each paneli
       ? `The audience has interjected with: "${interjection}". Continue the debate with 4-5 new turns responding to this.`
       : `Start the debate now.`;
 
-    const stream = await chatStream("anthropic/claude-3.5-haiku", [
+    const stream = await chatStream("mistralai/mistral-large", [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMsg },
     ], { max_tokens: 4000 });

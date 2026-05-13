@@ -85,7 +85,7 @@ router.post("/panel", async (req: Request, res: Response) => {
       topCandidates.map(async ({ guest }) => {
         const guestChunks = topByGuest.get(guest)!;
         const context = buildPersonaContext(guest, guestChunks);
-        const stance = await chat("anthropic/claude-3.5-haiku", [
+        const stance = await chat("mistralai/mistral-large", [
           {
             role: "user",
             content: `Based on these excerpts from ${guest}'s podcast appearance with Lenny Rachitsky, write ONE sentence (max 25 words) summarizing their specific stance on this question: "${question}"\n\nExcerpts:\n${context}\n\nRespond with only the one-sentence stance, no preamble.`,
@@ -102,7 +102,7 @@ router.post("/panel", async (req: Request, res: Response) => {
 
     const selectionPrompt = `You are selecting a debate panel. Pick ${size} guests from this list whose stances on "${question}" are most DIVERGENT and would create the most interesting debate.\n\nCandidates:\n${stanceList}\n\nReturn ONLY a JSON array of the guest names in the order they should appear, e.g. ["Name A", "Name B", "Name C"]. No other text.`;
 
-    const selectionRaw = await chat("anthropic/claude-3.5-haiku", [
+    const selectionRaw = await chat("mistralai/mistral-large", [
       { role: "user", content: selectionPrompt },
     ]);
 
@@ -169,7 +169,7 @@ router.post("/panel/manual", async (req: Request, res: Response) => {
           };
         }
         const context = buildPersonaContext(name, guestChunks);
-        const stance = await chat("anthropic/claude-3.5-haiku", [
+        const stance = await chat("mistralai/mistral-large", [
           {
             role: "user",
             content: `Based on these excerpts from ${name}'s podcast with Lenny Rachitsky, write ONE sentence (max 25 words) summarizing their specific stance on: "${question}"\n\nExcerpts:\n${context}\n\nRespond with only the one-sentence stance.`,
