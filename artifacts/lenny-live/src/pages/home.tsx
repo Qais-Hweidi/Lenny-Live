@@ -17,6 +17,11 @@ import {
   Search,
   X,
   Check,
+  Share2,
+  Clock,
+  ChevronLeft,
+  Copy,
+  BookOpen,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -28,10 +33,38 @@ interface DebateTurn {
   source: { episode: string; title: string; timestamp: string } | null;
 }
 
+interface SavedDebate {
+  id: string;
+  question: string;
+  guestNames: string[];
+  timestamp: number;
+  turns: DebateTurn[];
+}
+
 type AppState = "idle" | "selecting" | "ready" | "debating" | "done";
 type PanelMode = "auto" | "manual";
 
 const LENNY_COLOR = "#e2e8f0";
+const LS_KEY = "lenny-live-debates";
+const MAX_SAVED = 20;
+
+// ─── localStorage helpers ─────────────────────────────────────────────────
+
+function loadSavedDebates(): SavedDebate[] {
+  try {
+    return JSON.parse(localStorage.getItem(LS_KEY) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveDebate(debate: SavedDebate) {
+  try {
+    const existing = loadSavedDebates().filter((d) => d.id !== debate.id);
+    const next = [debate, ...existing].slice(0, MAX_SAVED);
+    localStorage.setItem(LS_KEY, JSON.stringify(next));
+  } catch {}
+}
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -71,31 +104,83 @@ function GlowOrb({
 function SourcePill({
   source,
   guestColor,
+  snippet,
 }: {
   source: DebateTurn["source"];
   guestColor: string;
+  snippet?: string;
 }) {
+  const [open, setOpen] = useState(false);
   if (!source) return null;
   return (
-    <a
-      href={`https://www.lennysnewsletter.com/p/${source.episode}`}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium mt-1.5 opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
-      style={{
-        backgroundColor: `${guestColor}18`,
-        border: `1px solid ${guestColor}40`,
-        color: guestColor,
-      }}
-      data-testid={`source-pill-${source.episode}`}
-    >
-      <Radio size={8} />
-      {source.title || source.episode} · {source.timestamp}
-    </a>
+    <span className="relative inline-block">
+      <a
+        href={`https://www.lennysnewsletter.com/p/${source.episode}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium mt-1.5 opacity-80 hover:opacity-100 transition-opacity cursor-pointer"
+        style={{
+          backgroundColor: `${guestColor}18`,
+          border: `1px solid ${guestColor}40`,
+          color: guestColor,
+        }}
+        data-testid={`source-pill-${source.episode}`}
+        onMouseEnter={() => snippet && setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        onClick={(e) => {
+          if (snippet) {
+            e.preventDefault();
+            setOpen((v) => !v);
+          }
+        }}
+      >
+        <Radio size={8} />
+        {source.title || source.episode} · {source.timestamp}
+        {snippet && <BookOpen size={7} className="ml-0.5 opacity-60" />}
+      </a>
+
+      {/* Hover snippet popover */}
+      {open && snippet && (
+        <div
+          className="absolute bottom-full left-0 mb-2 z-50 w-72 rounded-xl border border-border bg-card shadow-xl p-3"
+          onMouseEnter={() => setOpen(true)}
+          onMouseLeave={() => setOpen(false)}
+        >
+          <p className="text-[10px] text-muted-foreground leading-relaxed italic line-clamp-6">
+            "{snippet}"
+          </p>
+          <div className="mt-1.5 flex items-center justify-between">
+            <span className="text-[9px] text-muted-foreground/50">
+              {source.title} · {source.timestamp}
+            </span>
+            <a
+              href={`https://www.lennysnewsletter.com/p/${source.episode}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[9px] underline"
+              style={{ color: guestColor }}
+            >
+              Full episode →
+            </a>
+          </div>
+        </div>
+      )}
+    </span>
   );
 }
 
-function TurnBubble({ turn, isNew }: { turn: DebateTurn; isNew: boolean }) {
+function TurnBubble({
+  turn,
+  isNew,
+  guestChunks,
+}: {
+  turn: DebateTurn;
+  isNew: boolean;
+  guestChunks?: string[];
+}) {
+  // Pick the first relevant chunk as a snippet for the source pill hover
+  const snippet = guestChunks?.[0];
+
   return (
     <div
       className="flex gap-3 items-start caption-in"
@@ -111,7 +196,11 @@ function TurnBubble({ turn, isNew }: { turn: DebateTurn; isNew: boolean }) {
             {turn.speaker}
           </span>
           {turn.source && (
-            <SourcePill source={turn.source} guestColor={turn.color} />
+            <SourcePill
+              source={turn.source}
+              guestColor={turn.color}
+              snippet={snippet}
+            />
           )}
         </div>
         <p className="text-sm text-foreground/90 leading-relaxed">
@@ -180,7 +269,6 @@ function GuestPicker({
 
   return (
     <div className="w-full max-w-xl border border-border rounded-2xl bg-card overflow-hidden">
-      {/* Search bar */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
         <Search size={13} className="text-muted-foreground flex-shrink-0" />
         <input
@@ -198,7 +286,6 @@ function GuestPicker({
         )}
       </div>
 
-      {/* Guest list */}
       <div className="max-h-52 overflow-y-auto">
         {isLoading && (
           <p className="text-xs text-muted-foreground text-center py-4">
@@ -258,30 +345,172 @@ function GuestPicker({
   );
 }
 
+// ─── Summary card ─────────────────────────────────────────────────────────────
+
+function SummaryCard({
+  question,
+  panel,
+  turns,
+  onNewDebate,
+}: {
+  question: string;
+  panel: GuestInfo[];
+  turns: DebateTurn[];
+  onNewDebate: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const summaryText = useMemo(() => {
+    const header = `Lenny Live: "${question}"\n\n`;
+    const body = turns
+      .map((t) => `[${t.speaker}] ${t.text}`)
+      .join("\n\n");
+    return header + body + "\n\nGenerated by Lenny Live · AI personas grounded in real podcast transcripts · Not affiliated with Lenny Rachitsky";
+  }, [question, turns]);
+
+  const handleShare = useCallback(async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Lenny Live Debate", text: summaryText });
+        return;
+      } catch {}
+    }
+    await navigator.clipboard.writeText(summaryText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [summaryText]);
+
+  return (
+    <div
+      className="w-full rounded-2xl border border-border bg-card/60 p-5 flex flex-col gap-4"
+      data-testid="summary-card"
+    >
+      {/* Orbs row */}
+      <div className="flex items-center gap-3">
+        {panel.map((g) => (
+          <div key={g.name} className="flex items-center gap-1.5">
+            <GlowOrb color={g.color} size={20} float={false} />
+            <span className="text-[11px] text-muted-foreground">
+              {g.name.split(" ")[0]}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      <div>
+        <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">
+          Debate complete
+        </p>
+        <p className="text-sm font-semibold text-foreground leading-snug">
+          {question}
+        </p>
+        <p className="text-xs text-muted-foreground mt-1">
+          {turns.length} turns · {panel.length} panelists
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <button
+          onClick={handleShare}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium bg-primary text-primary-foreground hover:opacity-90 transition-all shadow-md shadow-primary/20"
+          data-testid="button-share"
+        >
+          {copied ? (
+            <>
+              <Check size={12} />
+              Copied!
+            </>
+          ) : navigator.share ? (
+            <>
+              <Share2 size={12} />
+              Share
+            </>
+          ) : (
+            <>
+              <Copy size={12} />
+              Copy transcript
+            </>
+          )}
+        </button>
+
+        <button
+          onClick={onNewDebate}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
+          data-testid="button-new-debate"
+        >
+          <RefreshCw size={12} />
+          New debate
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Past debates row ─────────────────────────────────────────────────────────
+
+function PastDebatesRow({ onRestore }: { onRestore: (d: SavedDebate) => void }) {
+  const [debates, setDebates] = useState<SavedDebate[]>([]);
+
+  useEffect(() => {
+    setDebates(loadSavedDebates());
+  }, []);
+
+  if (debates.length === 0) return null;
+
+  return (
+    <div className="w-full max-w-xl" data-testid="past-debates">
+      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1">
+        <Clock size={9} />
+        Past debates
+      </p>
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {debates.map((d) => (
+          <button
+            key={d.id}
+            onClick={() => onRestore(d)}
+            className="flex-shrink-0 text-left px-3 py-2 rounded-xl border border-border/60 bg-card/50 hover:border-primary/40 hover:bg-card transition-all max-w-[200px]"
+            data-testid={`past-debate-${d.id}`}
+          >
+            <p className="text-[11px] font-medium text-foreground truncate">
+              {d.question}
+            </p>
+            <p className="text-[9px] text-muted-foreground mt-0.5 truncate">
+              {d.guestNames.slice(0, 2).join(", ")} · {new Date(d.timestamp).toLocaleDateString()}
+            </p>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const SUGGESTED_QUESTIONS = [
+const ALL_SUGGESTIONS = [
   "Should PMs write code in the AI era?",
   "Is product-led growth still the best GTM strategy?",
   "When should a startup hire its first PM?",
   "Does moving fast and breaking things still work?",
   "Is 'jobs to be done' overrated?",
+  "How do you know when you've found product-market fit?",
+  "Should founders do sales themselves?",
+  "Is B2B or B2C harder to build?",
 ];
 
-const TURN_REVEAL_MS = 750; // delay between revealing queued turns
+const TURN_REVEAL_MS = 750;
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function Home() {
   const [state, setState] = useState<AppState>("idle");
   const [panelMode, setPanelMode] = useState<PanelMode>("auto");
+  const [panelSize, setPanelSize] = useState<2 | 3>(3);
   const [question, setQuestion] = useState("");
   const [panel, setPanel] = useState<GuestInfo[]>([]);
   const [selectedGuests, setSelectedGuests] = useState<Set<string>>(new Set());
+  const [suggestionOffset, setSuggestionOffset] = useState(0);
 
-  // Displayed turns (drip-fed from queue)
   const [visibleTurns, setVisibleTurns] = useState<DebateTurn[]>([]);
-  // Queue of turns received from SSE not yet shown
   const turnQueueRef = useRef<DebateTurn[]>([]);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [latestTurnIdx, setLatestTurnIdx] = useState<number | null>(null);
@@ -293,7 +522,27 @@ export default function Home() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  // Drip-feed turns from the queue one at a time
+  // 3 suggestions shown at once, cycling
+  const suggestions = useMemo(
+    () => ALL_SUGGESTIONS.slice(suggestionOffset, suggestionOffset + 3),
+    [suggestionOffset],
+  );
+
+  const cycleSuggestions = useCallback(() => {
+    setSuggestionOffset((o) => (o + 3) % ALL_SUGGESTIONS.length);
+  }, []);
+
+  // guest chunks map for citation hover
+  const guestChunksMap = useMemo(() => {
+    const m: Record<string, string[]> = {};
+    for (const g of panel) {
+      if (g.relevantChunks) m[g.name] = g.relevantChunks;
+    }
+    return m;
+  }, [panel]);
+
+  // ── Drip-feed queue ────────────────────────────────────────────────────────
+
   const drainQueue = useCallback(() => {
     if (turnQueueRef.current.length === 0) return;
     const next = turnQueueRef.current.shift()!;
@@ -310,7 +559,6 @@ export default function Home() {
   const enqueueTurn = useCallback(
     (turn: DebateTurn) => {
       turnQueueRef.current.push(turn);
-      // Start draining if not already running
       if (!revealTimerRef.current) {
         revealTimerRef.current = setTimeout(drainQueue, TURN_REVEAL_MS);
       }
@@ -318,7 +566,6 @@ export default function Home() {
     [drainQueue],
   );
 
-  // Flush any remaining queued turns immediately (used on abort/done)
   const flushQueue = useCallback(() => {
     if (revealTimerRef.current) {
       clearTimeout(revealTimerRef.current);
@@ -381,9 +628,9 @@ export default function Home() {
         data: { question: question.trim(), guestNames: [...selectedGuests] },
       });
     } else {
-      selectPanel({ data: { question: question.trim(), panelSize: 3 } });
+      selectPanel({ data: { question: question.trim(), panelSize } });
     }
-  }, [question, isSelecting, panelMode, selectedGuests, selectPanel, selectManualPanel]);
+  }, [question, isSelecting, panelMode, panelSize, selectedGuests, selectPanel, selectManualPanel]);
 
   const startDebate = useCallback(
     async (interject?: string) => {
@@ -394,7 +641,6 @@ export default function Home() {
       setError(null);
       if (interject) setInterjection("");
 
-      // Clear queue but keep visible turns so follow-ups append
       turnQueueRef.current = [];
       if (revealTimerRef.current) {
         clearTimeout(revealTimerRef.current);
@@ -422,6 +668,7 @@ export default function Home() {
         const reader = res.body!.getReader();
         const decoder = new TextDecoder();
         let buf = "";
+        const allTurns: DebateTurn[] = [];
 
         while (true) {
           const { done, value } = await reader.read();
@@ -434,19 +681,29 @@ export default function Home() {
             try {
               const event = JSON.parse(line.slice(6));
               if (event.type === "turn") {
-                enqueueTurn({
+                const turn: DebateTurn = {
                   speaker: event.speaker,
                   text: event.text,
                   color: event.color ?? LENNY_COLOR,
                   source: event.source ?? null,
-                });
+                };
+                allTurns.push(turn);
+                enqueueTurn(turn);
               } else if (event.type === "done") {
-                // Wait for queue to drain naturally, then mark done
                 const waitForDrain = () => {
                   if (turnQueueRef.current.length === 0) {
                     setState("done");
                     setCurrentSpeaker(null);
                     setIsStreaming(false);
+                    // Save to localStorage
+                    const saved: SavedDebate = {
+                      id: Date.now().toString(),
+                      question,
+                      guestNames: panel.map((g) => g.name),
+                      timestamp: Date.now(),
+                      turns: allTurns,
+                    };
+                    saveDebate(saved);
                   } else {
                     setTimeout(waitForDrain, TURN_REVEAL_MS);
                   }
@@ -487,6 +744,10 @@ export default function Home() {
     setInterjection("");
   }, []);
 
+  const handleRestorePast = useCallback((d: SavedDebate) => {
+    setQuestion(d.question);
+  }, []);
+
   const toggleGuest = useCallback((name: string) => {
     setSelectedGuests((prev) => {
       const next = new Set(prev);
@@ -506,7 +767,7 @@ export default function Home() {
 
   const showDebateFeed = state === "debating" || state === "done";
   const showInterjection =
-    (state === "done" || (state === "debating" && visibleTurns.length > 0));
+    state === "done" || (state === "debating" && visibleTurns.length > 0);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -594,6 +855,31 @@ export default function Home() {
               </button>
             </div>
 
+            {/* Panel size toggle (auto mode only) */}
+            {panelMode === "auto" && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span>Panel size:</span>
+                <div className="flex items-center gap-1 p-0.5 rounded-lg bg-muted">
+                  {([2, 3] as const).map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setPanelSize(n)}
+                      className={cn(
+                        "w-7 h-6 rounded-md text-xs font-medium transition-all",
+                        panelSize === n
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground",
+                      )}
+                      data-testid={`panel-size-${n}`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <span className="text-muted-foreground/60">guests</span>
+              </div>
+            )}
+
             {/* Question input */}
             <div className="w-full max-w-xl">
               <div className="relative rounded-2xl border border-border bg-card shadow-md focus-within:border-primary/50 focus-within:shadow-lg transition-all">
@@ -645,9 +931,9 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Suggested questions */}
-              <div className="mt-3 flex flex-wrap gap-2">
-                {SUGGESTED_QUESTIONS.map((q) => (
+              {/* 3 suggestion chips with cycle button */}
+              <div className="mt-3 flex items-center gap-2 flex-wrap">
+                {suggestions.map((q) => (
                   <button
                     key={q}
                     onClick={() => setQuestion(q)}
@@ -657,6 +943,15 @@ export default function Home() {
                     {q}
                   </button>
                 ))}
+                <button
+                  onClick={cycleSuggestions}
+                  className="flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors px-1"
+                  data-testid="button-cycle-suggestions"
+                  title="More suggestions"
+                >
+                  <ChevronLeft size={10} />
+                  <ChevronRight size={10} />
+                </button>
               </div>
             </div>
 
@@ -686,6 +981,9 @@ export default function Home() {
               </div>
             )}
 
+            {/* Past debates */}
+            <PastDebatesRow onRestore={handleRestorePast} />
+
             {error && (
               <p className="text-xs text-destructive bg-destructive/10 px-4 py-2 rounded-xl border border-destructive/20">
                 {error}
@@ -706,7 +1004,6 @@ export default function Home() {
               </h2>
             </div>
 
-            {/* Orbs */}
             <div className="flex items-end justify-center gap-8">
               <div className="flex flex-col items-center gap-2">
                 <GlowOrb color={LENNY_COLOR} size={52} float />
@@ -724,7 +1021,6 @@ export default function Home() {
               ))}
             </div>
 
-            {/* Stance cards */}
             <div className="w-full max-w-xl space-y-3">
               {panel.map((g) => (
                 <div
@@ -807,15 +1103,13 @@ export default function Home() {
             </div>
 
             {/* Turn feed */}
-            <div
-              className="flex flex-col gap-4 pb-2"
-              data-testid="debate-feed"
-            >
+            <div className="flex flex-col gap-4 pb-2" data-testid="debate-feed">
               {visibleTurns.map((turn, i) => (
                 <TurnBubble
                   key={i}
                   turn={turn}
                   isNew={i === latestTurnIdx}
+                  guestChunks={guestChunksMap[turn.speaker]}
                 />
               ))}
               {isStreaming && visibleTurns.length === 0 && (
@@ -827,12 +1121,22 @@ export default function Home() {
               <div ref={bottomRef} />
             </div>
 
-            {/* Interjection + done actions — visible once turns start coming in */}
+            {/* Summary card — shown when done */}
+            {state === "done" && (
+              <SummaryCard
+                question={question}
+                panel={panel}
+                turns={visibleTurns}
+                onNewDebate={handleReset}
+              />
+            )}
+
+            {/* Interjection input */}
             {showInterjection && (
               <div className="flex flex-col gap-3 items-center pt-3 border-t border-border/30">
-                {!isStreaming && (
+                {!isStreaming && state !== "done" && (
                   <p className="text-xs text-muted-foreground">
-                    Debate complete · Push back or ask a follow-up
+                    Push back or ask a follow-up
                   </p>
                 )}
 
@@ -876,17 +1180,6 @@ export default function Home() {
                     )}
                   </button>
                 </div>
-
-                {!isStreaming && (
-                  <button
-                    onClick={handleReset}
-                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-                    data-testid="button-new-question"
-                  >
-                    <ChevronRight size={12} />
-                    Ask a new question
-                  </button>
-                )}
               </div>
             )}
 
@@ -902,8 +1195,7 @@ export default function Home() {
       {/* ── Footer ── */}
       <footer className="border-t border-border/30 px-6 py-3 text-center">
         <p className="text-[10px] text-muted-foreground/50">
-          AI personas grounded in real transcripts · Not affiliated with Lenny
-          Rachitsky · Built for the Buildathon
+          AI personas grounded in real transcripts · Not affiliated with Lenny Rachitsky · Built for the Buildathon
         </p>
       </footer>
     </div>

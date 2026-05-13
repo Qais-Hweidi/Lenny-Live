@@ -93,6 +93,45 @@ paths:
               schema:
                 $ref: "#/components/schemas/GuestListResponse"
 
+
+  /debate:
+    post:
+      operationId: streamDebate
+      tags: [debate]
+      summary: Stream a live debate
+      description: |
+        Streams a live AI debate between 2-3 panelists moderated by Lenny.
+        Returns Server-Sent Events (SSE) as text/event-stream.
+        Each event is a JSON object: turn | done | error.
+        Must be called with fetch POST (not EventSource) because the request
+        body carries guests data and interjection text.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DebateRequest"
+      responses:
+        "200":
+          description: SSE stream of debate turns
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Newline-delimited SSE — data lines are JSON DebateTurn objects
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -142,6 +181,63 @@ components:
       required:
         - question
         - guestNames
+
+
+    DebateRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          description: The product/career question being debated
+        guests:
+          type: array
+          items:
+            $ref: "#/components/schemas/GuestInfo"
+          description: Panel of guests (2-3) with stances and relevant chunks
+          minItems: 2
+          maxItems: 3
+        interjection:
+          type: string
+          description: Optional audience follow-up injected into the debate
+      required:
+        - question
+        - guests
+
+    DebateTurn:
+      type: object
+      description: One SSE event from the debate stream
+      properties:
+        type:
+          type: string
+          enum: [turn, done, error]
+        speaker:
+          type: string
+        text:
+          type: string
+        color:
+          type: string
+        source:
+          $ref: "#/components/schemas/DebateSource"
+        message:
+          type: string
+          description: Error message (type=error only)
+      required:
+        - type
+
+    DebateSource:
+      type: object
+      description: Citation linking a turn to a real transcript excerpt
+      properties:
+        episode:
+          type: string
+        title:
+          type: string
+        timestamp:
+          type: string
+      required:
+        - episode
+        - title
+        - timestamp
 
     GuestInfo:
       type: object

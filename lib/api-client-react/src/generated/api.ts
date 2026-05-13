@@ -17,6 +17,7 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  DebateRequest,
   ErrorResponse,
   GuestListResponse,
   HealthStatus,
@@ -359,3 +360,95 @@ export function useListGuests<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * Streams a live AI debate between 2-3 panelists moderated by Lenny.
+Returns Server-Sent Events (SSE) as text/event-stream.
+Each event is a JSON object: turn | done | error.
+Must be called with fetch POST (not EventSource) because the request
+body carries guests data and interjection text.
+
+ * @summary Stream a live debate
+ */
+export const getStreamDebateUrl = () => {
+  return `/api/debate`;
+};
+
+export const streamDebate = async (
+  debateRequest: DebateRequest,
+  options?: RequestInit,
+): Promise<string> => {
+  return customFetch<string>(getStreamDebateUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(debateRequest),
+  });
+};
+
+export const getStreamDebateMutationOptions = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof streamDebate>>,
+    TError,
+    { data: BodyType<DebateRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof streamDebate>>,
+  TError,
+  { data: BodyType<DebateRequest> },
+  TContext
+> => {
+  const mutationKey = ["streamDebate"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof streamDebate>>,
+    { data: BodyType<DebateRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return streamDebate(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type StreamDebateMutationResult = NonNullable<
+  Awaited<ReturnType<typeof streamDebate>>
+>;
+export type StreamDebateMutationBody = BodyType<DebateRequest>;
+export type StreamDebateMutationError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Stream a live debate
+ */
+export const useStreamDebate = <
+  TError = ErrorType<ErrorResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof streamDebate>>,
+    TError,
+    { data: BodyType<DebateRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof streamDebate>>,
+  TError,
+  { data: BodyType<DebateRequest> },
+  TContext
+> => {
+  return useMutation(getStreamDebateMutationOptions(options));
+};

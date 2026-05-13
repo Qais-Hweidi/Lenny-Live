@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./debateRequest";
+export * from "./debateSource";
+export * from "./debateTurn";
+export * from "./debateTurnType";
 export * from "./errorResponse";
 export * from "./guestInfo";
 export * from "./guestListResponse";

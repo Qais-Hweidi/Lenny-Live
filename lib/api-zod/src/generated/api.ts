@@ -90,3 +90,38 @@ export const ListGuestsResponse = zod.object({
     }),
   ),
 });
+
+/**
+ * Streams a live AI debate between 2-3 panelists moderated by Lenny.
+Returns Server-Sent Events (SSE) as text/event-stream.
+Each event is a JSON object: turn | done | error.
+Must be called with fetch POST (not EventSource) because the request
+body carries guests data and interjection text.
+
+ * @summary Stream a live debate
+ */
+export const streamDebateBodyGuestsMin = 2;
+export const streamDebateBodyGuestsMax = 3;
+
+export const StreamDebateBody = zod.object({
+  question: zod.string().describe("The product\/career question being debated"),
+  guests: zod
+    .array(
+      zod.object({
+        name: zod.string(),
+        stance: zod.string(),
+        episode: zod.string(),
+        title: zod.string(),
+        timestamp: zod.string(),
+        color: zod.string(),
+        relevantChunks: zod.array(zod.string()).optional(),
+      }),
+    )
+    .min(streamDebateBodyGuestsMin)
+    .max(streamDebateBodyGuestsMax)
+    .describe("Panel of guests (2-3) with stances and relevant chunks"),
+  interjection: zod
+    .string()
+    .optional()
+    .describe("Optional audience follow-up injected into the debate"),
+});

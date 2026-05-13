@@ -45,6 +45,50 @@ export interface GuestInfo {
   relevantChunks?: string[];
 }
 
+export interface DebateRequest {
+  /** The product/career question being debated */
+  question: string;
+  /**
+   * Panel of guests (2-3) with stances and relevant chunks
+   * @minItems 2
+   * @maxItems 3
+   */
+  guests: GuestInfo[];
+  /** Optional audience follow-up injected into the debate */
+  interjection?: string;
+}
+
+export type DebateTurnType =
+  (typeof DebateTurnType)[keyof typeof DebateTurnType];
+
+export const DebateTurnType = {
+  turn: "turn",
+  done: "done",
+  error: "error",
+} as const;
+
+/**
+ * Citation linking a turn to a real transcript excerpt
+ */
+export interface DebateSource {
+  episode: string;
+  title: string;
+  timestamp: string;
+}
+
+/**
+ * One SSE event from the debate stream
+ */
+export interface DebateTurn {
+  type: DebateTurnType;
+  speaker?: string;
+  text?: string;
+  color?: string;
+  source?: DebateSource;
+  /** Error message (type=error only) */
+  message?: string;
+}
+
 export interface PanelResponse {
   guests: GuestInfo[];
 }
