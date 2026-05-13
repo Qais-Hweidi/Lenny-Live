@@ -77,24 +77,20 @@ router.post("/panel", async (req: Request, res: Response) => {
       return;
     }
 
-    // Get stance summaries for candidates
-    const stanceSummaries: {
-      guest: string;
-      stance: string;
-      chunks: (typeof topByGuest extends Map<string, infer V> ? V : never);
-    }[] = [];
-
-    for (const { guest } of topCandidates) {
-      const guestChunks = topByGuest.get(guest)!;
-      const context = buildPersonaContext(guest, guestChunks);
-      const stance = await chat("anthropic/claude-3.5-haiku", [
-        {
-          role: "user",
-          content: `Based on these excerpts from ${guest}'s podcast appearance with Lenny Rachitsky, write ONE sentence (max 25 words) summarizing their specific stance on this question: "${question}"\n\nExcerpts:\n${context}\n\nRespond with only the one-sentence stance, no preamble.`,
-        },
-      ]);
-      stanceSummaries.push({ guest, stance: stance.trim(), chunks: guestChunks as any });
-    }
+    // Get stance summaries for ALL candidates in parallel
+    const stanceSummaries = await Promise.all(
+      topCandidates.map(async ({ guest }) => {
+        const guestChunks = topByGuest.get(guest)!;
+        const context = buildPersonaContext(guest, guestChunks);
+        const stance = await chat("anthropic/claude-3.5-haiku", [
+          {
+            role: "user",
+            content: `Based on these excerpts from ${guest}'s podcast appearance with Lenny Rachitsky, write ONE sentence (max 25 words) summarizing their specific stance on this question: "${question}"\n\nExcerpts:\n${context}\n\nRespond with only the one-sentence stance, no preamble.`,
+          },
+        ]);
+        return { guest, stance: stance.trim(), chunks: guestChunks as any };
+      })
+    );
 
     // Pick the most opposing guests
     const stanceList = stanceSummaries
