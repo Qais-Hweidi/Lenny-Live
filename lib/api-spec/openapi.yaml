@@ -3,13 +3,15 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Lenny Live API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: debate
+    description: Debate operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,73 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /panel:
+    post:
+      operationId: selectPanel
+      tags: [debate]
+      summary: Select debate panel
+      description: Given a question, returns 2-3 guests with opposing stances grounded in real transcripts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PanelRequest"
+      responses:
+        "200":
+          description: Panel selected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PanelResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /panel/manual:
+    post:
+      operationId: getManualPanelStances
+      tags: [debate]
+      summary: Get stances for manually chosen guests
+      description: Returns stances for user-chosen guests without semantic selection
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManualPanelRequest"
+      responses:
+        "200":
+          description: Stances retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PanelResponse"
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /guests:
+    get:
+      operationId: listGuests
+      tags: [debate]
+      summary: List all available guests
+      description: Returns all guests from the index for manual panel selection
+      responses:
+        "200":
+          description: Guest list
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GuestListResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +103,103 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    PanelRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          description: The product/career question to debate
+        panelSize:
+          type: integer
+          description: Number of panelists (2 or 3)
+          minimum: 2
+          maximum: 3
+          default: 3
+      required:
+        - question
+
+    ManualPanelRequest:
+      type: object
+      properties:
+        question:
+          type: string
+          description: The product/career question to debate
+        guestNames:
+          type: array
+          items:
+            type: string
+          description: Names of guests to include in the panel
+          minItems: 2
+          maxItems: 3
+      required:
+        - question
+        - guestNames
+
+    GuestInfo:
+      type: object
+      properties:
+        name:
+          type: string
+        stance:
+          type: string
+        episode:
+          type: string
+        title:
+          type: string
+        timestamp:
+          type: string
+        color:
+          type: string
+        relevantChunks:
+          type: array
+          items:
+            type: string
+      required:
+        - name
+        - stance
+        - episode
+        - title
+        - timestamp
+        - color
+
+    PanelResponse:
+      type: object
+      properties:
+        guests:
+          type: array
+          items:
+            $ref: "#/components/schemas/GuestInfo"
+      required:
+        - guests
+
+    GuestSummary:
+      type: object
+      properties:
+        name:
+          type: string
+        filename:
+          type: string
+        title:
+          type: string
+      required:
+        - name
+        - filename
+        - title
+
+    GuestListResponse:
+      type: object
+      properties:
+        guests:
+          type: array
+          items:
+            $ref: "#/components/schemas/GuestSummary"
+      required:
+        - guests

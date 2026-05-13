@@ -10,5 +10,8 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "tsx": "catalog:"
+  },
+  "dependencies": {
+    "openai": "^6.37.0"
   }
 }

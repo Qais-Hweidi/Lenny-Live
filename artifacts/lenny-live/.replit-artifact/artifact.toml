@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Lenny Live"
+version = "1.0.0"
+id = "artifacts/lenny-live"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24630
+
+[services.development]
+run = "pnpm --filter @workspace/lenny-live run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/lenny-live", "run", "build" ]
+publicDir = "artifacts/lenny-live/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24630"
+BASE_PATH = "/"

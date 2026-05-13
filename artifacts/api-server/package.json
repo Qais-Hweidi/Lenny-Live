@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "export NODE_ENV=development && pnpm run build && pnpm run start",
+    "dev": "export NODE_ENV=development PORT=${PORT:-8080} && tsx watch src/index.ts",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
     "typecheck": "tsc -p tsconfig.json --noEmit"
@@ -16,8 +16,10 @@
     "cors": "^2",
     "drizzle-orm": "catalog:",
     "express": "^5",
+    "openai": "^6.37.0",
     "pino": "^9",
-    "pino-http": "^10"
+    "pino-http": "^10",
+    "tsx": "catalog:"
   },
   "devDependencies": {
     "@types/cookie-parser": "^1.4.10",
