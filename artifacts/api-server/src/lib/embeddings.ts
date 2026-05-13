@@ -144,100 +144,56 @@ export function scoreBM25(
   return score;
 }
 
-// ── Query embedding (projects query to the same dense space) ─────────────────
+// ── OpenRouter client for query-time embeddings ───────────────────────────────
+
+import OpenAI from "openai";
+
+const EMBED_MODEL = "openai/text-embedding-3-small";
+
+let _openrouterClient: OpenAI | null = null;
+
+function getOpenRouterClient(): OpenAI | null {
+  if (_openrouterClient) return _openrouterClient;
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) return null;
+  _openrouterClient = new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey,
+  });
+  return _openrouterClient;
+}
+
+function l2normalize(v: number[]): number[] {
+  let norm = 0;
+  for (const x of v) norm += x * x;
+  norm = Math.sqrt(norm);
+  if (norm === 0) return v;
+  return v.map((x) => x / norm);
+}
 
 /**
- * Projects a query string into the same dense embedding space used by
- * build-embeddings.ts (TF-IDF weighted random projection).  Returns [] when
- * embeddings.json has not been built yet.
+ * Embeds a query string using the same OpenRouter model used to build
+ * embeddings.json (openai/text-embedding-3-small).
+ * Returns [] when the API key is missing or the API is unavailable, allowing
+ * the caller to fall back to BM25 retrieval.
  */
 export async function embed(text: string): Promise<number[]> {
-  if (!embeddingsAvailable || !embeddingsByGuest) return [];
-  return projectQuery(text);
-}
-
-// Projection state (loaded lazily from embeddings.json metadata)
-let _projMatrix: Float32Array | null = null;
-let _vocabIndex: Map<string, number> | null = null;
-let _dims = 256;
-let _projReady = false;
-
-function ensureProjectionLoaded(): boolean {
-  if (_projReady) return true;
-  if (!fs.existsSync(EMBEDDINGS_FILE)) return false;
-
+  if (!embeddingsAvailable) return [];
+  const client = getOpenRouterClient();
+  if (!client) {
+    console.warn("[embeddings] OPENROUTER_API_KEY not set — BM25 fallback.");
+    return [];
+  }
   try {
-    const embData = JSON.parse(
-      fs.readFileSync(EMBEDDINGS_FILE, "utf-8"),
-    ) as StoredEmbeddings & { vocabSize: number; seed: number };
-
-    if (!embData.vocabSize || !embData.seed) return false;
-
-    _dims = embData.dims;
-    const seed = embData.seed;
-    const vocabSize = embData.vocabSize;
-
-    // Rebuild the same projection matrix with the same seed
-    const scale = 1 / Math.sqrt(_dims);
-    _projMatrix = new Float32Array(vocabSize * _dims);
-    let s = seed >>> 0;
-    const rng = () => {
-      s ^= s << 13;
-      s ^= s >>> 17;
-      s ^= s << 5;
-      return (s >>> 0) / 4294967296;
-    };
-    for (let i = 0; i < vocabSize * _dims; i++) {
-      const u1 = Math.max(rng(), 1e-10);
-      const u2 = rng();
-      _projMatrix[i] = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2) * scale;
-    }
-
-    // Build vocab index from the first chunk's tfidf keys is not reliable.
-    // Instead sort IDF map by weight (same as build-embeddings.ts) and take top vocabSize.
-    if (idfMap) {
-      const sorted = Object.entries(idfMap)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, vocabSize)
-        .map(([t]) => t);
-      _vocabIndex = new Map(sorted.map((t, i) => [t, i]));
-      _projReady = true;
-    }
-  } catch {
-    return false;
+    const response = await client.embeddings.create({
+      model: EMBED_MODEL,
+      input: text,
+    });
+    return l2normalize(response.data[0].embedding);
+  } catch (err) {
+    console.warn("[embeddings] embed() failed, BM25 fallback:", err);
+    return [];
   }
-
-  return _projReady;
-}
-
-function projectQuery(text: string): number[] {
-  if (!ensureProjectionLoaded() || !_projMatrix || !_vocabIndex) return [];
-
-  const tokens = tokenize(text);
-  const tf: Record<string, number> = {};
-  for (const t of tokens) tf[t] = (tf[t] ?? 0) + 1;
-  const total = tokens.length || 1;
-  for (const t in tf) tf[t] /= total;
-
-  const dense = new Float32Array(_dims);
-  const idf = idfMap ?? {};
-
-  for (const [term, tfVal] of Object.entries(tf)) {
-    const idx = _vocabIndex.get(term);
-    if (idx === undefined) continue;
-    const weight = tfVal * (idf[term] ?? 0);
-    const rowOffset = idx * _dims;
-    for (let d = 0; d < _dims; d++) {
-      dense[d] += weight * _projMatrix[rowOffset + d];
-    }
-  }
-
-  let norm = 0;
-  for (let d = 0; d < _dims; d++) norm += dense[d] * dense[d];
-  norm = Math.sqrt(norm);
-  if (norm > 0) for (let d = 0; d < _dims; d++) dense[d] /= norm;
-
-  return Array.from(dense);
 }
 
 // ── Retrieval ─────────────────────────────────────────────────────────────────
