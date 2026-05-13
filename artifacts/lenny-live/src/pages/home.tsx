@@ -30,40 +30,10 @@ interface DebateTurn {
   source: { episode: string; title: string; timestamp: string } | null;
 }
 
-interface SavedDebate {
-  id: string;
-  question: string;
-  guestNames: string[];
-  timestamp: number;
-  turns: DebateTurn[];
-}
-
 type AppState = "idle" | "selecting" | "ready" | "debating" | "done";
 type PanelMode = "auto" | "manual";
 
 const LENNY_COLOR = "#e2e8f0";
-const LS_KEY = "lenny-live-debates";
-const MAX_SAVED = 20;
-
-// ─── localStorage helpers ─────────────────────────────────────────────────
-
-function loadSavedDebates(): SavedDebate[] {
-  try {
-    return JSON.parse(localStorage.getItem(LS_KEY) ?? "[]");
-  } catch {
-    return [];
-  }
-}
-
-function saveDebate(debate: SavedDebate) {
-  try {
-    const existing = loadSavedDebates().filter((d) => d.id !== debate.id);
-    const next = [debate, ...existing].slice(0, MAX_SAVED);
-    localStorage.setItem(LS_KEY, JSON.stringify(next));
-  } catch {
-    // localStorage unavailable — silently skip
-  }
-}
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
@@ -392,45 +362,6 @@ function InlineInterjectBox({
   );
 }
 
-// ─── Past debates row ─────────────────────────────────────────────────────────
-
-function PastDebatesRow({ onRestore }: { onRestore: (d: SavedDebate) => void }) {
-  const [debates, setDebates] = useState<SavedDebate[]>([]);
-
-  useEffect(() => {
-    setDebates(loadSavedDebates());
-  }, []);
-
-  if (debates.length === 0) return null;
-
-  return (
-    <div className="w-full max-w-xl" data-testid="past-debates">
-      <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1">
-        <Clock size={9} />
-        Past debates
-      </p>
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-        {debates.map((d) => (
-          <button
-            key={d.id}
-            onClick={() => onRestore(d)}
-            className="flex-shrink-0 text-left px-3 py-2 rounded-xl border border-border/60 bg-card/50 hover:border-primary/40 hover:bg-card transition-all max-w-[200px]"
-            data-testid={`past-debate-${d.id}`}
-          >
-            <p className="text-[11px] font-medium text-foreground truncate">
-              {d.question}
-            </p>
-            <p className="text-[9px] text-muted-foreground mt-0.5 truncate">
-              {d.guestNames.slice(0, 2).join(", ")} ·{" "}
-              {new Date(d.timestamp).toLocaleDateString()}
-            </p>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const ALL_SUGGESTIONS = [
@@ -679,13 +610,6 @@ export default function Home() {
                     setState("done");
                     setCurrentSpeaker(null);
                     setIsStreaming(false);
-                    saveDebate({
-                      id: Date.now().toString(),
-                      question,
-                      guestNames: panel.map((g) => g.name),
-                      timestamp: Date.now(),
-                      turns: allTurns,
-                    });
                   } else {
                     setTimeout(waitForDrain, TURN_REVEAL_MS);
                   }
@@ -726,10 +650,6 @@ export default function Home() {
     setError(null);
     setCurrentSpeaker(null);
     setIsStreaming(false);
-  }, []);
-
-  const handleRestorePast = useCallback((d: SavedDebate) => {
-    setQuestion(d.question);
   }, []);
 
   const toggleGuest = useCallback((name: string) => {
@@ -964,9 +884,6 @@ export default function Home() {
                 <GuestPicker selected={selectedGuests} onToggle={toggleGuest} />
               </div>
             )}
-
-            {/* Past debates */}
-            <PastDebatesRow onRestore={handleRestorePast} />
 
             {error && (
               <p className="text-xs text-destructive bg-destructive/10 px-4 py-2 rounded-xl border border-destructive/20">
