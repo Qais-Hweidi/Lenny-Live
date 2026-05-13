@@ -351,10 +351,11 @@ function InlineInterjectBox({
         {isDone && (
           <button
             onClick={onNewDebate}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all whitespace-nowrap"
             data-testid="button-new-debate"
           >
             <RefreshCw size={13} />
+            New debate
           </button>
         )}
       </div>
