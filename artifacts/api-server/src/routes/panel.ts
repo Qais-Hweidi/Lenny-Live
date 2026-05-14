@@ -34,14 +34,29 @@ function getEpisodeFromFilename(filename: string): string {
   return path.basename(filename, ".md");
 }
 
+const FEATURED_GUESTS = new Set([
+  "Marc Andreessen",
+  "Ben Horowitz",
+  "Evan Spiegel",
+  "Melanie Perkins",
+  "Stewart Butterfield",
+  "Dr. Fei Fei Li",
+  "Brian Halligan",
+  "Keith Rabois",
+  "Jason M Lemkin",
+  "Howie Liu",
+]);
+
 router.get("/guests", (_req: Request, res: Response) => {
   try {
     const index: Index = JSON.parse(fs.readFileSync(INDEX_FILE, "utf-8"));
-    const guests = index.podcasts.map((p) => ({
-      name: p.guest,
-      filename: p.filename,
-      title: p.title,
-    }));
+    const guests = index.podcasts
+      .map((p) => ({
+        name: p.guest,
+        filename: p.filename,
+        title: p.title,
+      }))
+      .filter((g) => FEATURED_GUESTS.has(g.name));
     res.json({ guests });
   } catch (err) {
     res.status(500).json({ error: "Failed to load guest list" });
