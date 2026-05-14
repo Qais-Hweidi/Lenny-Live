@@ -4,10 +4,14 @@ import { chat } from "../lib/openrouter.js";
 import { getGuestColor, resetColors, buildPersonaContext } from "../lib/personas.js";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const INDEX_FILE = path.resolve(__dirname, "../../data/index.json");
+function resolveDataDir(): string {
+  const cwd = process.cwd();
+  const local = path.join(cwd, "data");
+  if (fs.existsSync(path.join(local, "index.json"))) return local;
+  return path.join(cwd, "artifacts/api-server/data");
+}
+const INDEX_FILE = path.join(resolveDataDir(), "index.json");
 
 interface IndexEntry {
   title: string;

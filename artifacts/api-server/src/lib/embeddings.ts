@@ -1,9 +1,16 @@
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
+// Resolve the data directory regardless of whether we're running in dev (tsx,
+// CWD = artifacts/api-server/) or production (bundled dist/index.mjs,
+// CWD = workspace root).
+function resolveDataDir(): string {
+  const cwd = process.cwd();
+  const local = path.join(cwd, "data");
+  if (fs.existsSync(path.join(local, "index.json"))) return local;
+  return path.join(cwd, "artifacts/api-server/data");
+}
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_DIR = path.resolve(__dirname, "../../data");
+const DATA_DIR = resolveDataDir();
 const TEXT_INDEX_FILE = path.join(DATA_DIR, "text-index.json");
 const EMBEDDINGS_FILE = path.join(DATA_DIR, "embeddings.json");
 
