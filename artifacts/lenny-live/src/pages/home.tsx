@@ -431,7 +431,10 @@ export default function Home() {
   // ── Drip-feed queue ────────────────────────────────────────────────────────
 
   const drainQueue = useCallback(() => {
-    if (turnQueueRef.current.length === 0) return;
+    if (turnQueueRef.current.length === 0) {
+      revealTimerRef.current = null;
+      return;
+    }
     const next = turnQueueRef.current.shift()!;
     setVisibleTurns((prev) => {
       const idx = prev.length;
