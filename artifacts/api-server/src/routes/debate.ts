@@ -42,6 +42,7 @@ router.post("/debate", async (req: Request, res: Response) => {
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
   res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("X-Accel-Buffering", "no");
   res.flushHeaders();
 
   const sendEvent = (data: object) => {
