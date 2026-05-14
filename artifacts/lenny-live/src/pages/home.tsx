@@ -390,6 +390,7 @@ export default function Home() {
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
 
 
+  const [pendingInterjection, setPendingInterjection] = useState<string | null>(null);
   const [visibleTurns, setVisibleTurns] = useState<DebateTurn[]>([]);
   const turnQueueRef = useRef<DebateTurn[]>([]);
   const revealTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -438,6 +439,7 @@ export default function Home() {
       setTimeout(() => setLatestTurnIdx(null), 1200);
       return [...prev, next];
     });
+    setPendingInterjection(null);
     setCurrentSpeaker(next.speaker);
     revealTimerRef.current = setTimeout(drainQueue, TURN_REVEAL_MS);
   }, []);
@@ -540,6 +542,8 @@ export default function Home() {
       // For fresh debates: wipe everything
       if (!isFollowUp) {
         setVisibleTurns([]);
+      } else {
+        setPendingInterjection(interject!);
       }
       turnQueueRef.current = [];
       if (revealTimerRef.current) {
@@ -647,6 +651,7 @@ export default function Home() {
     setQuestion("");
     setPanel([]);
     setVisibleTurns([]);
+    setPendingInterjection(null);
     setError(null);
     setCurrentSpeaker(null);
     setIsStreaming(false);
@@ -1013,12 +1018,34 @@ export default function Home() {
                   guestChunks={guestChunksMap[turn.speaker]}
                 />
               ))}
-              {isStreaming && visibleTurns.length === 0 && (
+              {isStreaming && visibleTurns.length === 0 && !pendingInterjection && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground animate-pulse pl-1">
                   <div className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
                   The debate is starting...
                 </div>
               )}
+
+              {/* User's follow-up bubble */}
+              {pendingInterjection && (
+                <div className="flex justify-end">
+                  <div className="max-w-[75%] bg-primary/15 border border-primary/25 rounded-2xl rounded-br-sm px-4 py-2.5 text-sm text-foreground">
+                    {pendingInterjection}
+                  </div>
+                </div>
+              )}
+
+              {/* Generating indicator — shown while waiting for first response turn */}
+              {isStreaming && pendingInterjection && (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground pl-1">
+                  <div className="flex gap-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </div>
+                  Generating response…
+                </div>
+              )}
+
               <div ref={bottomRef} />
             </div>
 
