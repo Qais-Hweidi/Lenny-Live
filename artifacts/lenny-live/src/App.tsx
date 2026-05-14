@@ -28,6 +28,38 @@ function App() {
           <Router />
         </WouterRouter>
         <Toaster />
+        <a
+          href="https://x.com/QaisHweidi"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            position: "fixed",
+            bottom: "16px",
+            right: "16px",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "6px 10px",
+            background: "rgba(15, 15, 15, 0.75)",
+            border: "1px solid rgba(255,255,255,0.12)",
+            borderRadius: "20px",
+            color: "rgba(255,255,255,0.7)",
+            fontSize: "12px",
+            fontFamily: "inherit",
+            textDecoration: "none",
+            backdropFilter: "blur(8px)",
+            zIndex: 9999,
+            opacity: 0.85,
+            transition: "opacity 0.2s",
+          }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = "1")}
+          onMouseLeave={e => (e.currentTarget.style.opacity = "0.85")}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+          </svg>
+          by Qais
+        </a>
       </TooltipProvider>
     </QueryClientProvider>
   );
