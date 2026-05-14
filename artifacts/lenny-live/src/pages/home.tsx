@@ -711,15 +711,9 @@ export default function Home() {
         <div className="flex items-center gap-3">
           <GlowOrb color="#8b5cf6" size={32} float={false} pulse />
           <div>
-            <h1 className="text-base font-semibold tracking-tight text-foreground flex items-center gap-1.5">
+            <h1 className="text-base font-semibold tracking-tight text-foreground">
               Lenny Live
-              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/20">
-                BUILDATHON
-              </span>
             </h1>
-            <p className="text-[11px] text-muted-foreground">
-              AI debate room · 50 Lenny podcasts
-            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
