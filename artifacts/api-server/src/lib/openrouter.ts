@@ -6,17 +6,23 @@ if (!OPENROUTER_API_KEY) {
   throw new Error("OPENROUTER_API_KEY environment variable is required");
 }
 
-export const openrouter = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: OPENROUTER_API_KEY,
-});
+function getClient(apiKey?: string) {
+  return new OpenAI({
+    baseURL: "https://openrouter.ai/api/v1",
+    apiKey: apiKey || OPENROUTER_API_KEY!,
+  });
+}
+
+export const openrouter = getClient();
 
 export async function chat(
   model: string,
   messages: OpenAI.ChatCompletionMessageParam[],
-  options?: Partial<OpenAI.ChatCompletionCreateParamsNonStreaming>
+  options?: Partial<OpenAI.ChatCompletionCreateParamsNonStreaming>,
+  apiKey?: string,
 ): Promise<string> {
-  const response = await openrouter.chat.completions.create({
+  const client = apiKey ? getClient(apiKey) : openrouter;
+  const response = await client.chat.completions.create({
     model,
     messages,
     ...options,
@@ -27,9 +33,11 @@ export async function chat(
 export async function chatStream(
   model: string,
   messages: OpenAI.ChatCompletionMessageParam[],
-  options?: Partial<OpenAI.ChatCompletionCreateParamsStreaming>
+  options?: Partial<OpenAI.ChatCompletionCreateParamsStreaming>,
+  apiKey?: string,
 ): Promise<AsyncIterable<OpenAI.ChatCompletionChunk>> {
-  return openrouter.chat.completions.create({
+  const client = apiKey ? getClient(apiKey) : openrouter;
+  return client.chat.completions.create({
     model,
     messages,
     stream: true,

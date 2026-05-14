@@ -3,6 +3,7 @@ import {
   useSelectPanel,
   useGetManualPanelStances,
   useListGuests,
+  setExtraHeaders,
 } from "@workspace/api-client-react";
 import type { GuestInfo } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ import {
   Check,
   Clock,
   ChevronLeft,
+  Key,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -402,6 +404,24 @@ export default function Home() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
+  const [byokKey, setByokKey] = useState<string>(
+    () => localStorage.getItem("lenny-live-openrouter-key") ?? "",
+  );
+  const [showKeyInput, setShowKeyInput] = useState(false);
+  const [keyDraft, setKeyDraft] = useState<string>(
+    () => localStorage.getItem("lenny-live-openrouter-key") ?? "",
+  );
+
+  useEffect(() => {
+    if (byokKey) {
+      localStorage.setItem("lenny-live-openrouter-key", byokKey);
+      setExtraHeaders({ "x-openrouter-key": byokKey });
+    } else {
+      localStorage.removeItem("lenny-live-openrouter-key");
+      setExtraHeaders({});
+    }
+  }, [byokKey]);
+
   const suggestions = useMemo(
     () => ALL_SUGGESTIONS.slice(suggestionOffset, suggestionOffset + 3),
     [suggestionOffset],
@@ -561,7 +581,10 @@ export default function Home() {
       try {
         const res = await fetch("/api/debate", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(byokKey ? { "x-openrouter-key": byokKey } : {}),
+          },
           body: JSON.stringify({
             question,
             guests: panel,
@@ -699,17 +722,83 @@ export default function Home() {
             </p>
           </div>
         </div>
-        {state !== "idle" && (
+        <div className="flex items-center gap-2">
+          {state !== "idle" && (
+            <button
+              onClick={handleReset}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-muted"
+              data-testid="button-reset"
+            >
+              <RefreshCw size={12} />
+              New question
+            </button>
+          )}
           <button
-            onClick={handleReset}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5 rounded-lg hover:bg-muted"
-            data-testid="button-reset"
+            onClick={() => {
+              setKeyDraft(byokKey);
+              setShowKeyInput((v) => !v);
+            }}
+            className={cn(
+              "flex items-center gap-1.5 text-xs transition-colors px-3 py-1.5 rounded-lg",
+              byokKey
+                ? "text-emerald-400 hover:text-emerald-300 bg-emerald-400/10 hover:bg-emerald-400/20"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted",
+            )}
+            title={byokKey ? "Your OpenRouter key is active" : "Use your own OpenRouter key"}
+            data-testid="button-byok"
           >
-            <RefreshCw size={12} />
-            New question
+            <Key size={12} />
+            {byokKey ? "Your key" : "BYOK"}
           </button>
-        )}
+        </div>
       </header>
+
+      {showKeyInput && (
+        <div className="border-b border-border/50 bg-muted/20 px-6 py-3 flex items-center gap-3">
+          <Key size={13} className="text-muted-foreground flex-shrink-0" />
+          <div className="flex-1 flex items-center gap-2 min-w-0">
+            <input
+              type="password"
+              value={keyDraft}
+              onChange={(e) => setKeyDraft(e.target.value)}
+              placeholder="sk-or-v1-… your OpenRouter key"
+              className="flex-1 min-w-0 bg-background border border-border rounded-md px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setByokKey(keyDraft.trim());
+                  setShowKeyInput(false);
+                }
+                if (e.key === "Escape") setShowKeyInput(false);
+              }}
+              autoFocus
+            />
+            <button
+              onClick={() => {
+                setByokKey(keyDraft.trim());
+                setShowKeyInput(false);
+              }}
+              className="flex-shrink-0 text-xs px-3 py-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Save
+            </button>
+            {byokKey && (
+              <button
+                onClick={() => {
+                  setByokKey("");
+                  setKeyDraft("");
+                  setShowKeyInput(false);
+                }}
+                className="flex-shrink-0 text-xs px-2 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <p className="text-[10px] text-muted-foreground hidden sm:block flex-shrink-0">
+            Stored locally · never sent to our servers
+          </p>
+        </div>
+      )}
 
       <main className="flex-1 flex flex-col max-w-3xl mx-auto w-full px-4 py-6 gap-6">
 
@@ -732,6 +821,24 @@ export default function Home() {
                 product &amp; career questions
               </p>
             </div>
+
+            {!byokKey && (
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/20 text-xs text-amber-400/90 max-w-sm text-center">
+                <span>
+                  🆓 Free to use — until I burn through my $30 OpenRouter tab and this whole thing goes dark. No pressure.{" "}
+                  <button
+                    onClick={() => {
+                      setKeyDraft(byokKey);
+                      setShowKeyInput(true);
+                    }}
+                    className="underline underline-offset-2 hover:text-amber-300 transition-colors"
+                  >
+                    Add your own key
+                  </button>{" "}
+                  to outlive my credit card.
+                </span>
+              </div>
+            )}
 
             {/* Mode toggle */}
             <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted text-xs font-medium">

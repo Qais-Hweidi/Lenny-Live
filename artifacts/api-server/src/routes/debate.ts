@@ -30,6 +30,7 @@ interface DebateRequest {
 }
 
 router.post("/debate", async (req: Request, res: Response) => {
+  const byokKey = req.headers["x-openrouter-key"] as string | undefined;
   const { question, guests, interjection, priorTurns } = req.body as DebateRequest;
 
   if (!question?.trim() || !guests?.length) {
@@ -121,7 +122,7 @@ Lenny's color is always "#e2e8f0". Use the exact colors provided for each paneli
     const stream = await chatStream("mistralai/mistral-large", [
       { role: "system", content: systemPrompt },
       { role: "user", content: userMsg },
-    ], { max_tokens: 4000 });
+    ], { max_tokens: 4000 }, byokKey);
 
     let turnBuffer = "";
     let inArray = false;

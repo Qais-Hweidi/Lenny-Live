@@ -49,6 +49,7 @@ router.get("/guests", (_req: Request, res: Response) => {
 });
 
 router.post("/panel", async (req: Request, res: Response) => {
+  const byokKey = req.headers["x-openrouter-key"] as string | undefined;
   try {
     const { question, panelSize = 3 } = req.body as {
       question: string;
@@ -94,7 +95,7 @@ router.post("/panel", async (req: Request, res: Response) => {
             role: "user",
             content: `Based on these excerpts from ${guest}'s podcast appearance with Lenny Rachitsky, write ONE sentence (max 25 words) summarizing their specific stance on this question: "${question}"\n\nExcerpts:\n${context}\n\nRespond with only the one-sentence stance, no preamble.`,
           },
-        ]);
+        ], undefined, byokKey);
         return { guest, stance: stance.trim(), chunks: guestChunks };
       })
     );
@@ -108,7 +109,7 @@ router.post("/panel", async (req: Request, res: Response) => {
 
     const selectionRaw = await chat("mistralai/mistral-large", [
       { role: "user", content: selectionPrompt },
-    ]);
+    ], undefined, byokKey);
 
     let selectedNames: string[];
     try {
@@ -141,6 +142,7 @@ router.post("/panel", async (req: Request, res: Response) => {
 });
 
 router.post("/panel/manual", async (req: Request, res: Response) => {
+  const byokKey = req.headers["x-openrouter-key"] as string | undefined;
   try {
     const { question, guestNames } = req.body as {
       question: string;
@@ -178,7 +180,7 @@ router.post("/panel/manual", async (req: Request, res: Response) => {
             role: "user",
             content: `Based on these excerpts from ${name}'s podcast with Lenny Rachitsky, write ONE sentence (max 25 words) summarizing their specific stance on: "${question}"\n\nExcerpts:\n${context}\n\nRespond with only the one-sentence stance.`,
           },
-        ]);
+        ], undefined, byokKey);
         const topChunk = guestChunks[0];
         return {
           name,
