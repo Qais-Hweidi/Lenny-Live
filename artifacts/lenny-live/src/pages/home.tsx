@@ -345,18 +345,37 @@ function InlineInterjectBox({
 // ─── Guest photos ────────────────────────────────────────────────────────────
 
 const GUEST_PHOTOS: Record<string, string> = {
-  "Lenny":             "https://unavatar.io/twitter/lennysan",
-  "Lenny Rachitsky":   "https://unavatar.io/twitter/lennysan",
-  "Marc Andreessen":   "https://unavatar.io/twitter/pmarca",
-  "Ben Horowitz":      "https://unavatar.io/twitter/bhorowitz",
-  "Evan Spiegel":      "https://unavatar.io/twitter/evanspiegel",
-  "Melanie Perkins":   "https://unavatar.io/twitter/MelanieCanva",
-  "Stewart Butterfield":"https://unavatar.io/twitter/stewart",
-  "Dr. Fei Fei Li":   "https://unavatar.io/twitter/drfeifei",
-  "Brian Halligan":    "https://unavatar.io/twitter/bhalligan",
-  "Keith Rabois":      "https://unavatar.io/twitter/rabois",
-  "Jason M Lemkin":    "https://unavatar.io/twitter/jasonlk",
-  "Howie Liu":         "https://unavatar.io/twitter/howielyu",
+  "Lenny":                              "https://unavatar.io/twitter/lennysan",
+  "Lenny Rachitsky":                    "https://unavatar.io/twitter/lennysan",
+  "Ben Horowitz":                       "https://unavatar.io/twitter/bhorowitz",
+  "Boris Cherny":                       "https://unavatar.io/twitter/bcherny",
+  "Brian Halligan":                     "https://unavatar.io/twitter/bhalligan",
+  "Chip Huyen":                         "https://unavatar.io/twitter/chipro",
+  "Claire Vo":                          "https://unavatar.io/twitter/clairevo",
+  "Dhanji R. Prasanna":                 "https://unavatar.io/twitter/dhanji",
+  "Dr. Becky Kennedy":                  "https://unavatar.io/twitter/drbeckyatgoodinside",
+  "Dr. Fei Fei Li":                     "https://unavatar.io/twitter/drfeifei",
+  "Edwin Chen":                         "https://unavatar.io/twitter/echen",
+  "Elena Verna 4.0":                    "https://unavatar.io/twitter/elenalverna",
+  "Eric Ries, Lean Startup author":     "https://unavatar.io/twitter/ericries",
+  "Evan Spiegel":                       "https://unavatar.io/twitter/evanspiegel",
+  "Garrett Lord":                       "https://unavatar.io/twitter/garrettlord",
+  "Hamel Husain & Shreya Shankar":      "https://unavatar.io/twitter/hamelhusain",
+  "Howie Liu":                          "https://unavatar.io/twitter/howielyu",
+  "Jason Cohen":                        "https://unavatar.io/twitter/asmartbear",
+  "Jason M Lemkin":                     "https://unavatar.io/twitter/jasonlk",
+  "Jeetu Patel":                        "https://unavatar.io/twitter/jeetupatel",
+  "Keith Rabois":                       "https://unavatar.io/twitter/rabois",
+  "Marc Andreessen":                    "https://unavatar.io/twitter/pmarca",
+  "Melanie Perkins":                    "https://unavatar.io/twitter/MelanieCanva",
+  "Molly Graham":                       "https://unavatar.io/twitter/mollybg",
+  "Nicole Forsgren":                    "https://unavatar.io/twitter/nicolefv",
+  "Nikhyl Singhal":                     "https://unavatar.io/twitter/nikhyl",
+  "Sam Lessin":                         "https://unavatar.io/twitter/lessin",
+  "Scott Wu":                           "https://unavatar.io/twitter/_scottwu",
+  "Simon Willison":                     "https://unavatar.io/twitter/simonw",
+  "Stewart Butterfield":                "https://unavatar.io/twitter/stewart",
+  "Tomer Cohen":                        "https://unavatar.io/twitter/tomercohen007",
 };
 
 function getInitials(name: string) {
@@ -414,18 +433,6 @@ function GuestAvatar({
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const FEATURED_GUEST_NAMES = [
-  "Marc Andreessen",
-  "Ben Horowitz",
-  "Evan Spiegel",
-  "Melanie Perkins",
-  "Stewart Butterfield",
-  "Dr. Fei Fei Li",
-  "Brian Halligan",
-  "Keith Rabois",
-  "Jason M Lemkin",
-  "Howie Liu",
-];
 
 const ALL_SUGGESTIONS = [
   "Is product-led growth still the best GTM strategy?",

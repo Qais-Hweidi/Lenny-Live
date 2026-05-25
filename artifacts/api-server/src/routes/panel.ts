@@ -34,29 +34,22 @@ function getEpisodeFromFilename(filename: string): string {
   return path.basename(filename, ".md");
 }
 
-const FEATURED_GUESTS = new Set([
-  "Marc Andreessen",
-  "Ben Horowitz",
-  "Evan Spiegel",
-  "Melanie Perkins",
-  "Stewart Butterfield",
-  "Dr. Fei Fei Li",
-  "Brian Halligan",
-  "Keith Rabois",
-  "Jason M Lemkin",
-  "Howie Liu",
-]);
-
 router.get("/guests", (_req: Request, res: Response) => {
   try {
     const index: Index = JSON.parse(fs.readFileSync(INDEX_FILE, "utf-8"));
+    const seen = new Set<string>();
     const guests = index.podcasts
       .map((p) => ({
         name: p.guest,
         filename: p.filename,
         title: p.title,
       }))
-      .filter((g) => FEATURED_GUESTS.has(g.name));
+      .filter((g) => {
+        if (seen.has(g.name)) return false;
+        seen.add(g.name);
+        return true;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
     res.json({ guests });
   } catch (err) {
     res.status(500).json({ error: "Failed to load guest list" });
@@ -84,10 +77,9 @@ router.post("/panel", async (req: Request, res: Response) => {
     const queryEmbedding = await embed(question);
     const topByGuest = getTopChunksByGuest(queryEmbedding, chunks, 5, question, idf);
 
-    // Get top guests by their best chunk score — restrict to featured guests only
+    // Get top guests by their best chunk score
     const guestScores: { guest: string; topScore: number }[] = [];
     for (const [guest, guestChunks] of topByGuest) {
-      if (!FEATURED_GUESTS.has(guest)) continue;
       const topScore = guestChunks[0]?.score ?? 0;
       if (topScore > 0) {
         guestScores.push({ guest, topScore });
