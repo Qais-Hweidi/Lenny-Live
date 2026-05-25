@@ -107,7 +107,7 @@ function App() {
                   >
                     Lenny's Buildathon
                   </a>
-                  {" "}— a collaboration between Lenny Rachitsky and Replit.
+                  {" "}— Lenny x Replit.
                 </p>
               </div>
 
