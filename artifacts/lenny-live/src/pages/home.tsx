@@ -360,6 +360,7 @@ function InlineInterjectBox({
 
 const GUEST_PHOTOS: Record<string, string> = {
   "Lenny":             "https://unavatar.io/twitter/lennysan",
+  "Lenny Rachitsky":   "https://unavatar.io/twitter/lennysan",
   "Marc Andreessen":   "https://unavatar.io/twitter/pmarca",
   "Ben Horowitz":      "https://unavatar.io/twitter/bhorowitz",
   "Evan Spiegel":      "https://unavatar.io/twitter/evanspiegel",
@@ -1014,7 +1015,7 @@ export default function Home() {
 
             <div className="flex items-end justify-center gap-8">
               <div className="flex flex-col items-center gap-2">
-                <GlowOrb color={LENNY_COLOR} size={52} float />
+                <GuestAvatar name="Lenny" size={52} color={LENNY_COLOR} />
                 <span className="text-xs font-medium text-foreground/80">
                   Lenny
                 </span>
