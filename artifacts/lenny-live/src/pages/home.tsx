@@ -817,21 +817,19 @@ export default function Home() {
             </div>
 
             {!byokKey && (
-              <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-500/8 border border-amber-500/20 text-xs text-amber-400/90 max-w-sm text-center">
-                <span>
-                  🆓 Free to use — until I burn through my $30 OpenRouter tab and this whole thing goes dark. No pressure.{" "}
-                  <button
-                    onClick={() => {
-                      setKeyDraft(byokKey);
-                      setShowKeyInput(true);
-                    }}
-                    className="underline underline-offset-2 hover:text-amber-300 transition-colors"
-                  >
-                    Add your own key
-                  </button>{" "}
-                  to outlive my credit card.
-                </span>
-              </div>
+              <p className="text-[11px] text-muted-foreground/60">
+                Free while my credits last —{" "}
+                <button
+                  onClick={() => {
+                    setKeyDraft(byokKey);
+                    setShowKeyInput(true);
+                  }}
+                  className="underline underline-offset-2 hover:text-muted-foreground transition-colors"
+                >
+                  add your own key
+                </button>{" "}
+                to keep it running
+              </p>
             )}
 
             {/* Mode toggle */}
