@@ -139,7 +139,7 @@ function TurnBubble({
       className="flex gap-3 items-start caption-in"
       data-testid={`turn-bubble-${turn.speaker.toLowerCase().replace(/\s+/g, "-")}`}
     >
-      <GlowOrb color={turn.color} size={36} float={false} pulse={isNew} />
+      <GuestAvatar name={turn.speaker} size={36} color={turn.color} ring={isNew} />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 mb-1 flex-wrap">
           <span
@@ -185,12 +185,7 @@ function PanelOrb({
             style={{ color: guest.color }}
           />
         )}
-        <GlowOrb
-          color={guest.color}
-          size={56}
-          float={!speaking}
-          speaking={speaking}
-        />
+        <GuestAvatar name={guest.name} size={56} color={guest.color} ring={speaking} />
       </div>
       <span className="text-[11px] font-medium text-center max-w-[80px] leading-tight text-foreground/80">
         {guest.name.split(" ").slice(0, 2).join(" ")}
@@ -364,6 +359,7 @@ function InlineInterjectBox({
 // ─── Guest photos ────────────────────────────────────────────────────────────
 
 const GUEST_PHOTOS: Record<string, string> = {
+  "Lenny":             "https://unavatar.io/twitter/lennysan",
   "Marc Andreessen":   "https://unavatar.io/twitter/pmarca",
   "Ben Horowitz":      "https://unavatar.io/twitter/bhorowitz",
   "Evan Spiegel":      "https://unavatar.io/twitter/evanspiegel",
@@ -1025,7 +1021,7 @@ export default function Home() {
               </div>
               {panel.map((g) => (
                 <div key={g.name} className="flex flex-col items-center gap-2">
-                  <GlowOrb color={g.color} size={68} float />
+                  <GuestAvatar name={g.name} size={68} color={g.color} />
                   <span className="text-xs font-medium text-center max-w-[90px] leading-tight text-foreground/80">
                     {g.name.split(" ").slice(0, 2).join(" ")}
                   </span>
@@ -1041,7 +1037,7 @@ export default function Home() {
                   style={{ borderColor: `${g.color}30` }}
                   data-testid={`stance-card-${g.name.toLowerCase().replace(/\s+/g, "-")}`}
                 >
-                  <GlowOrb color={g.color} size={28} float={false} />
+                  <GuestAvatar name={g.name} size={28} color={g.color} />
                   <div>
                     <p
                       className="text-xs font-semibold mb-0.5"
