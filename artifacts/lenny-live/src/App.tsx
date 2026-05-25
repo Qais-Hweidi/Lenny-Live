@@ -120,7 +120,7 @@ function App() {
                 I wanted to apply that same idea here — bringing together
                 Lenny's podcast guests in a roundtable format, so you can get a
                 full 360° perspective on any product or career question, grounded
-                in their real words from the show.
+                in their real words.
               </p>
 
               <div className="pt-1 border-t border-white/10 flex items-center justify-end">
