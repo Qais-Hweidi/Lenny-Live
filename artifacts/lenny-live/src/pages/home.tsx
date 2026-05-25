@@ -914,17 +914,6 @@ export default function Home() {
             </div>
 
 
-            {/* AI panel preview — 10 guest thumbnails */}
-            {panelMode === "auto" && (
-              <div className="grid grid-cols-5 gap-2">
-                {FEATURED_GUEST_NAMES.map((name) => (
-                  <div key={name} title={name}>
-                    <GuestAvatar name={name} size={36} />
-                  </div>
-                ))}
-              </div>
-            )}
-
             {/* Question input */}
             <div className="w-full max-w-xl">
               <div className="relative rounded-2xl border border-border bg-card shadow-md focus-within:border-primary/50 focus-within:shadow-lg transition-all">
