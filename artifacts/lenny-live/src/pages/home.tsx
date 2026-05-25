@@ -146,7 +146,7 @@ function TurnBubble({
             className="text-xs font-semibold tracking-wide uppercase"
             style={{ color: turn.color }}
           >
-            {turn.speaker}
+            {displayName(turn.speaker)}
           </span>
           {turn.source && (
             <SourcePill
@@ -276,7 +276,7 @@ function GuestPicker({
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-medium text-foreground truncate">
-                  {g.name}
+                  {displayName(g.name)}
                 </p>
                 <p className="text-[10px] text-muted-foreground truncate">
                   {g.title}
@@ -452,8 +452,18 @@ function GuestAvatar({
   );
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Display name overrides ──────────────────────────────────────────────────
 
+const DISPLAY_NAME_OVERRIDES: Record<string, string> = {
+  "Elena Verna 4.0": "Elena Verna",
+  "Sherwin Wu V2":   "Sherwin Wu",
+};
+
+function displayName(name: string): string {
+  return DISPLAY_NAME_OVERRIDES[name] ?? name;
+}
+
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const ALL_SUGGESTIONS = [
   "Is product-led growth still the best GTM strategy?",
@@ -1047,7 +1057,7 @@ export default function Home() {
                 <div key={g.name} className="flex flex-col items-center gap-2">
                   <GuestAvatar name={g.name} size={68} color={g.color} />
                   <span className="text-xs font-medium text-center max-w-[90px] leading-tight text-foreground/80">
-                    {g.name.split(" ").slice(0, 2).join(" ")}
+                    {displayName(g.name).split(" ").slice(0, 2).join(" ")}
                   </span>
                 </div>
               ))}
@@ -1067,7 +1077,7 @@ export default function Home() {
                       className="text-xs font-semibold mb-0.5"
                       style={{ color: g.color }}
                     >
-                      {g.name}
+                      {displayName(g.name)}
                     </p>
                     <p className="text-xs text-muted-foreground leading-relaxed">
                       {g.stance}
