@@ -359,7 +359,7 @@ const GUEST_PHOTOS: Record<string, string> = {
   "Chip Huyen":                         "https://unavatar.io/twitter/chipro",
   "Claire Vo":                          "https://unavatar.io/twitter/clairevo",
   "Dhanji R. Prasanna":                 "https://unavatar.io/twitter/dhanji",
-  "Dr. Becky Kennedy":                  "https://unavatar.io/twitter/drbeckyatgoodinside",
+  "Dr. Becky Kennedy":                  `${import.meta.env.BASE_URL}dr-becky-kennedy.png`,
   "Dr. Fei Fei Li":                     "https://unavatar.io/twitter/drfeifei",
   "Edwin Chen":                         "https://unavatar.io/twitter/echen",
   "Elena Verna 4.0":                    `${import.meta.env.BASE_URL}elena-verna.png`,
