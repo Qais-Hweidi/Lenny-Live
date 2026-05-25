@@ -395,6 +395,8 @@ const GUEST_PHOTOS: Record<string, string> = {
   "Stewart Butterfield":                "https://unavatar.io/twitter/stewart",
   "Tomer Cohen":                        "https://unavatar.io/twitter/tomercohen007",
   "Zevi Arnovitz":                      "https://unavatar.io/twitter/ArnovitzZevi",
+  "Aishwarya Naresh Reganti + Kiriti Badam": "https://unavatar.io/github/Aishwarya-NR",
+  "Rachel Lockett":                     "https://unavatar.io/linkedin/rhlockett",
 };
 
 function getInitials(name: string) {
