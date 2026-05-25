@@ -384,7 +384,7 @@ const TURN_REVEAL_MS = 750;
 export default function Home() {
   const [state, setState] = useState<AppState>("idle");
   const [panelMode, setPanelMode] = useState<PanelMode>("auto");
-  const [panelSize, setPanelSize] = useState<2 | 3>(3);
+
   const [question, setQuestion] = useState("");
   const [panel, setPanel] = useState<GuestInfo[]>([]);
   const [selectedGuests, setSelectedGuests] = useState<Set<string>>(new Set());
@@ -539,13 +539,12 @@ export default function Home() {
         data: { question: question.trim(), guestNames: [...selectedGuests] },
       });
     } else {
-      selectPanel({ data: { question: question.trim(), panelSize } });
+      selectPanel({ data: { question: question.trim(), panelSize: 3 } });
     }
   }, [
     question,
     isSelecting,
     panelMode,
-    panelSize,
     selectedGuests,
     selectPanel,
     selectManualPanel,
@@ -851,30 +850,6 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Panel size toggle (auto mode only) */}
-            {panelMode === "auto" && (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>Panel size:</span>
-                <div className="flex items-center gap-1 p-0.5 rounded-lg bg-muted">
-                  {([2, 3] as const).map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => setPanelSize(n)}
-                      className={cn(
-                        "w-7 h-6 rounded-md text-xs font-medium transition-all",
-                        panelSize === n
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground",
-                      )}
-                      data-testid={`panel-size-${n}`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                </div>
-                <span className="text-muted-foreground/60">guests</span>
-              </div>
-            )}
 
             {/* Question input */}
             <div className="w-full max-w-xl">
