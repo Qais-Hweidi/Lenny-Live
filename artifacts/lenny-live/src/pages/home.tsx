@@ -1015,7 +1015,7 @@ export default function Home() {
 
             <div className="flex items-end justify-center gap-8">
               <div className="flex flex-col items-center gap-2">
-                <GuestAvatar name="Lenny" size={52} color={LENNY_COLOR} />
+                <GuestAvatar name="Lenny" size={68} color={LENNY_COLOR} />
                 <span className="text-xs font-medium text-foreground/80">
                   Lenny
                 </span>
