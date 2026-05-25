@@ -1155,13 +1155,6 @@ export default function Home() {
         )}
       </main>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-border/30 px-6 py-3 text-center">
-        <p className="text-[10px] text-muted-foreground/50">
-          AI representations grounded in publicly available podcast transcripts.
-          Not affiliated with the guests or Lenny's Newsletter.
-        </p>
-      </footer>
     </div>
   );
 }
