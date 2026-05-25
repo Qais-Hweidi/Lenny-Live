@@ -1,0 +1,90 @@
+What will you build with Lenny's data?
+Lenny's opening up his newsletter and podcast archive. Clone the dataset, build something amazing with it on Replit, and compete for prizes.
+
+Buildathon
+Build with Lenny's dataset
+293 podcast transcripts. 349 newsletter posts. Three weeks to turn them into something useful, creative, or wildly fun. May 6 – May 27.
+
+Join
+→
+Live Now
+·
+3 days left
+·
+May 6 – May 27, 2026
+·
+Build & submit by May 27
+How it works
+1. Get the data
+Clone the free starter pack from GitHub — 10 newsletter posts and 50 podcast transcripts in AI-friendly markdown. Paid subscribers can access the full archive (349 posts + 293 transcripts) at lennysdata.com.
+
+2. Build on Replit
+Sign in with your Replit account and start building. Use Replit Agent to go from idea to working app fast — no coding experience required. Think search tools, quizzes, games, AI assistants, visualizations, or anything else the data inspires.
+
+3. Submit by May 27
+Deploy your app on Replit and submit it through the portal. Include a demo link, screenshots, and a brief description of what you built and how it uses the dataset.
+
+Timeline
+May 6
+Registration Opens & Building Begins
+Sign up with your Replit account, clone the dataset, and start building.
+
+May 27
+Submissions Due
+Submit your project via the portal by end of day.
+
+Jun 3
+Winners Announced
+Lenny and the Replit team review submissions and announce winners on June 3, 2026.
+
+Prizes
+The most creative, useful, and well-executed project built with Lenny's dataset will receive:
+
+Amjad Masad
+Career Coaching
+A 1-on-1 session with Amjad Masad, Founder and CEO of Replit
+$5,000
+Replit
+in Replit credits
+Lenny's Newsletter
+1 Year of Lenny's Newsletter + Product Pass
+A free year of Lenny's Newsletter which comes with Product Pass access
+Judging criteria
+1
+Creative use of the dataset
+How inventively does the project use Lenny's newsletter and podcast content? Surprising, delightful, and novel approaches stand out.
+
+2
+Usefulness
+Does it solve a real problem or provide genuine value? Could Lenny's subscribers actually use this?
+
+3
+Execution & polish
+Is it well-built, thoughtfully designed, and actually working? Shipped and polished beats ambitious and broken.
+
+Featured example
+LennyRPG
+by Ondrej Machart — a non-technical designer
+
+Ondrej turned Lenny's Podcast transcripts into a retro RPG where you navigate product management challenges using real advice from the show's guests. Built entirely with AI tools, no coding required — proof that anyone can build something amazing with this dataset.
+
+Read the story
+Lenny's reaction
+FAQ
+Do I need to be a paid subscriber?
+No! The free starter pack includes 10 newsletter posts and 50 podcast transcripts — plenty to build with. Paid subscribers get access to the full archive at lennysdata.com, but it's not required to participate.
+
+When does it start and end?
+The buildathon opens on May 6, 2026 and submissions close on May 27, 2026 at end of day. Winners will be announced on June 3, 2026.
+
+Do I need to know how to code?
+Not at all. LennyRPG was built by a non-technical designer using AI tools. Replit Agent lets you describe what you want to build in plain English and it writes the code for you.
+
+What kind of things can I build?
+Anything that uses Lenny's newsletter or podcast data in an interesting way — a search tool, a quiz, an AI assistant, a game, a visualization, a recommendation engine, a study guide. Check out example projects for inspiration.
+
+Does my project need to be built on Replit?
+Yes — your project must be built and deployed on Replit. You'll submit a .replit.app URL through the portal.
+
+Who judges the winners?
+The Replit team will review all submissions and announce winners on June 3, 2026. Projects are judged on creative use of the dataset, usefulness, and overall execution.
