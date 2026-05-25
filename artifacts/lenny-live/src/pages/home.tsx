@@ -300,13 +300,9 @@ function GuestPicker({
 function InlineInterjectBox({
   onSubmit,
   isStreaming,
-  isDone,
-  onNewDebate,
 }: {
   onSubmit: (text: string) => void;
   isStreaming: boolean;
-  isDone: boolean;
-  onNewDebate: () => void;
 }) {
   const [text, setText] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -341,16 +337,6 @@ function InlineInterjectBox({
         >
           <Send size={13} />
         </button>
-        {isDone && (
-          <button
-            onClick={onNewDebate}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-sm font-medium border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-all whitespace-nowrap"
-            data-testid="button-new-debate"
-          >
-            <RefreshCw size={13} />
-            New debate
-          </button>
-        )}
       </div>
     </div>
   );
@@ -771,12 +757,12 @@ export default function Home() {
       {/* ── Header ── */}
       <header className="border-b border-border/50 px-6 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <GlowOrb color="#8b5cf6" size={32} float={false} pulse />
-          <div>
+          <button onClick={handleReset} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <GlowOrb color="#8b5cf6" size={32} float={false} pulse />
             <h1 className="text-base font-semibold tracking-tight text-foreground">
               Lenny Live
             </h1>
-          </div>
+          </button>
         </div>
         <div className="flex items-center gap-2">
           {state !== "idle" && (
@@ -1170,8 +1156,6 @@ export default function Home() {
               <InlineInterjectBox
                 onSubmit={(text) => startDebate(text)}
                 isStreaming={isStreaming}
-                isDone={state === "done"}
-                onNewDebate={handleReset}
               />
             )}
 
