@@ -789,7 +789,7 @@ export default function Home() {
             )}
           </div>
           <p className="text-[10px] text-muted-foreground hidden sm:block flex-shrink-0">
-            Stored locally · never sent to our servers
+            {byokKey ? "Stored locally · never sent to our servers" : "Free while my credits last — add your key to keep it running"}
           </p>
         </div>
       )}
@@ -816,21 +816,6 @@ export default function Home() {
               </p>
             </div>
 
-            {!byokKey && (
-              <p className="text-[11px] text-muted-foreground/60">
-                Free while my credits last —{" "}
-                <button
-                  onClick={() => {
-                    setKeyDraft(byokKey);
-                    setShowKeyInput(true);
-                  }}
-                  className="underline underline-offset-2 hover:text-muted-foreground transition-colors"
-                >
-                  add your own key
-                </button>{" "}
-                to keep it running
-              </p>
-            )}
 
             {/* Mode toggle */}
             <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted text-xs font-medium">
