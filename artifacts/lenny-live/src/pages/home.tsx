@@ -428,6 +428,19 @@ function GuestAvatar({
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
+const FEATURED_GUEST_NAMES = [
+  "Marc Andreessen",
+  "Ben Horowitz",
+  "Evan Spiegel",
+  "Melanie Perkins",
+  "Stewart Butterfield",
+  "Dr. Fei Fei Li",
+  "Brian Halligan",
+  "Keith Rabois",
+  "Jason M Lemkin",
+  "Howie Liu",
+];
+
 const ALL_SUGGESTIONS = [
   "Is product-led growth still the best GTM strategy?",
   "Are PMs actually necessary at early-stage startups?",
@@ -900,6 +913,17 @@ export default function Home() {
               </button>
             </div>
 
+
+            {/* AI panel preview — 10 guest thumbnails */}
+            {panelMode === "auto" && (
+              <div className="grid grid-cols-5 gap-2">
+                {FEATURED_GUEST_NAMES.map((name) => (
+                  <div key={name} title={name}>
+                    <GuestAvatar name={name} size={36} />
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Question input */}
             <div className="w-full max-w-xl">
