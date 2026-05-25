@@ -858,10 +858,6 @@ export default function Home() {
               <h2 className="text-2xl font-bold text-foreground font-serif">
                 Ask Lenny's guests anything
               </h2>
-              <p className="text-sm text-muted-foreground max-w-md">
-                AI personas grounded in real podcast transcripts argue your
-                product &amp; career questions
-              </p>
             </div>
 
 
