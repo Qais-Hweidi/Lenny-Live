@@ -9,7 +9,6 @@ import type { GuestInfo } from "@workspace/api-client-react";
 import { cn } from "@/lib/utils";
 import {
   Mic,
-  ChevronRight,
   RefreshCw,
   Send,
   Sparkles,
@@ -19,7 +18,6 @@ import {
   X,
   Check,
   Clock,
-  ChevronLeft,
   Key,
 } from "lucide-react";
 
@@ -371,10 +369,6 @@ const ALL_SUGGESTIONS = [
   "Is product-led growth still the best GTM strategy?",
   "Are PMs actually necessary at early-stage startups?",
   "Does moving fast and breaking things still work?",
-  "Is 'jobs to be done' overrated?",
-  "Is product-market fit a myth?",
-  "Should founders do sales themselves?",
-  "Is B2B or B2C harder to build?",
 ];
 
 const TURN_REVEAL_MS = 750;
@@ -388,7 +382,6 @@ export default function Home() {
   const [question, setQuestion] = useState("");
   const [panel, setPanel] = useState<GuestInfo[]>([]);
   const [selectedGuests, setSelectedGuests] = useState<Set<string>>(new Set());
-  const [suggestionOffset, setSuggestionOffset] = useState(0);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
 
 
@@ -422,10 +415,7 @@ export default function Home() {
     }
   }, [byokKey]);
 
-  const suggestions = useMemo(
-    () => ALL_SUGGESTIONS.slice(suggestionOffset, suggestionOffset + 3),
-    [suggestionOffset],
-  );
+  const suggestions = ALL_SUGGESTIONS;
 
   // Cycle placeholder text every 3 seconds when the input is empty and idle
   useEffect(() => {
@@ -436,9 +426,6 @@ export default function Home() {
     return () => clearInterval(id);
   }, [state]);
 
-  const cycleSuggestions = useCallback(() => {
-    setSuggestionOffset((o) => (o + 3) % ALL_SUGGESTIONS.length);
-  }, []);
 
   const guestChunksMap = useMemo(() => {
     const m: Record<string, string[]> = {};
@@ -914,15 +901,6 @@ export default function Home() {
                     {q}
                   </button>
                 ))}
-                <button
-                  onClick={cycleSuggestions}
-                  className="flex items-center gap-0.5 text-[11px] text-muted-foreground/60 hover:text-muted-foreground transition-colors px-1"
-                  data-testid="button-cycle-suggestions"
-                  title="More suggestions"
-                >
-                  <ChevronLeft size={10} />
-                  <ChevronRight size={10} />
-                </button>
               </div>
             </div>
 
