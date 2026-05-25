@@ -123,8 +123,7 @@ function App() {
                 in their real words from the show.
               </p>
 
-              <div className="pt-1 border-t border-white/10 flex items-center justify-between">
-                <span className="text-xs text-white/30">Made by Qais</span>
+              <div className="pt-1 border-t border-white/10 flex items-center justify-end">
                 <a
                   href="https://x.com/QaisHweidi"
                   target="_blank"
