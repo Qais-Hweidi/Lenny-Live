@@ -362,7 +362,7 @@ const GUEST_PHOTOS: Record<string, string> = {
   "Dr. Becky Kennedy":                  "https://unavatar.io/twitter/drbeckyatgoodinside",
   "Dr. Fei Fei Li":                     "https://unavatar.io/twitter/drfeifei",
   "Edwin Chen":                         "https://unavatar.io/twitter/echen",
-  "Elena Verna 4.0":                    "https://unavatar.io/twitter/elenalverna",
+  "Elena Verna 4.0":                    `${import.meta.env.BASE_URL}elena-verna.png`,
   "Eric Ries, Lean Startup author":     "https://unavatar.io/twitter/ericries",
   "Ethan Smith":                        "https://unavatar.io/twitter/ethan_l_s",
   "Evan Spiegel":                       "https://unavatar.io/twitter/evanspiegel",
