@@ -757,7 +757,7 @@ export default function Home() {
       {/* ── Header ── */}
       <header className="border-b border-border/50 px-6 py-4 flex items-center justify-between sticky top-0 z-10 bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <button onClick={handleReset} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+          <button onClick={handleReset} className="flex items-center gap-3 hover:opacity-80 transition-opacity cursor-pointer">
             <GlowOrb color="#8b5cf6" size={32} float={false} pulse />
             <h1 className="text-base font-semibold tracking-tight text-foreground">
               Lenny Live
