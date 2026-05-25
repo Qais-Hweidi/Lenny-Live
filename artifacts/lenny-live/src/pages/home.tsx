@@ -421,8 +421,7 @@ function GuestAvatar({
   ring?: boolean;
 }) {
   const [failed, setFailed] = useState(false);
-  const rawSrc = GUEST_PHOTOS[name];
-  const src = rawSrc ? `${rawSrc}?fallback=404` : undefined;
+  const src = GUEST_PHOTOS[name];
 
   return (
     <div
