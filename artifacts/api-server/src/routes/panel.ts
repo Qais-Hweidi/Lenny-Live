@@ -84,9 +84,10 @@ router.post("/panel", async (req: Request, res: Response) => {
     const queryEmbedding = await embed(question);
     const topByGuest = getTopChunksByGuest(queryEmbedding, chunks, 5, question, idf);
 
-    // Get top guests by their best chunk score
+    // Get top guests by their best chunk score — restrict to featured guests only
     const guestScores: { guest: string; topScore: number }[] = [];
     for (const [guest, guestChunks] of topByGuest) {
+      if (!FEATURED_GUESTS.has(guest)) continue;
       const topScore = guestChunks[0]?.score ?? 0;
       if (topScore > 0) {
         guestScores.push({ guest, topScore });
