@@ -369,10 +369,10 @@ function InlineInterjectBox({
 
 const ALL_SUGGESTIONS = [
   "Is product-led growth still the best GTM strategy?",
-  "When should a startup hire its first PM?",
+  "Are PMs actually necessary at early-stage startups?",
   "Does moving fast and breaking things still work?",
   "Is 'jobs to be done' overrated?",
-  "How do you know when you've found product-market fit?",
+  "Is product-market fit a myth?",
   "Should founders do sales themselves?",
   "Is B2B or B2C harder to build?",
 ];
