@@ -271,14 +271,12 @@ function GuestPicker({
               )}
               data-testid={`guest-option-${g.name.toLowerCase().replace(/\s+/g, "-")}`}
             >
-              <div
-                className={cn(
-                  "w-4 h-4 rounded flex items-center justify-center flex-shrink-0 border transition-colors",
-                  isSelected ? "bg-primary border-primary" : "border-border",
-                )}
-              >
+              <div className="relative flex-shrink-0">
+                <GuestAvatar name={g.name} size={34} ring={isSelected} />
                 {isSelected && (
-                  <Check size={10} className="text-primary-foreground" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+                    <Check size={9} className="text-primary-foreground" />
+                  </div>
                 )}
               </div>
               <div className="min-w-0">
@@ -359,6 +357,74 @@ function InlineInterjectBox({
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+// ─── Guest photos ────────────────────────────────────────────────────────────
+
+const GUEST_PHOTOS: Record<string, string> = {
+  "Marc Andreessen":   "https://unavatar.io/twitter/pmarca",
+  "Ben Horowitz":      "https://unavatar.io/twitter/bhorowitz",
+  "Evan Spiegel":      "https://unavatar.io/twitter/evanspiegel",
+  "Melanie Perkins":   "https://unavatar.io/twitter/MelanieCanva",
+  "Stewart Butterfield":"https://unavatar.io/twitter/stewart",
+  "Dr. Fei Fei Li":   "https://unavatar.io/twitter/drfeifei",
+  "Brian Halligan":    "https://unavatar.io/twitter/bhalligan",
+  "Keith Rabois":      "https://unavatar.io/twitter/rabois",
+  "Jason M Lemkin":    "https://unavatar.io/twitter/jasonlk",
+  "Howie Liu":         "https://unavatar.io/twitter/howielyu",
+};
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+}
+
+function GuestAvatar({
+  name,
+  size = 36,
+  color,
+  ring = false,
+}: {
+  name: string;
+  size?: number;
+  color?: string;
+  ring?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+  const src = GUEST_PHOTOS[name];
+
+  return (
+    <div
+      className="relative flex-shrink-0 rounded-full overflow-hidden"
+      style={{
+        width: size,
+        height: size,
+        outline: ring ? `2px solid ${color ?? "hsl(var(--primary))"}` : undefined,
+        outlineOffset: 2,
+      }}
+    >
+      {src && !failed ? (
+        <img
+          src={src}
+          alt={name}
+          className="w-full h-full object-cover"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <div
+          className="w-full h-full flex items-center justify-center text-[11px] font-semibold text-white"
+          style={{ background: color ?? "hsl(var(--muted))" }}
+        >
+          {getInitials(name)}
+        </div>
+      )}
     </div>
   );
 }
