@@ -107,7 +107,7 @@ function App() {
                   >
                     Lenny's Buildathon
                   </a>
-                  {" "}— Lenny x Replit.
+                  {" · Lenny x Replit."}
                 </p>
               </div>
 
